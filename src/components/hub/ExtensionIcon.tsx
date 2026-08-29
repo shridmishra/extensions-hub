@@ -21,6 +21,7 @@ import {
   Headphones,
   Disc
 } from "lucide-react"
+import FigmaIcon from "../ui/FigmaIcon"
 
 interface ExtensionIconProps {
   name: string
@@ -34,6 +35,8 @@ export const ExtensionIcon: React.FC<ExtensionIconProps> = ({
   className
 }) => {
   switch (name) {
+    case "Figma":
+      return <FigmaIcon size={size} className={className} />
     case "Type":
       return <Type size={size} className={className} />
     case "Pipette":

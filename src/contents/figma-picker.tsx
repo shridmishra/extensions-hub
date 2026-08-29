@@ -299,7 +299,7 @@ export default function FigmaPickerContentScript() {
 
   return (
     <div className={`hub-extension-root ${isDarkMode ? "dark" : ""} text-neutral-900 dark:text-neutral-100 antialiased`}>
-      {/* 1. Seamless Floating Island Toolbar at Top Center */}
+      {/* 1. Seamless Floating Island Toolbar Centered at Top */}
       <FigmaIslandToolbar
         currentMode={currentMode}
         onModeChange={(mode) => {
@@ -308,14 +308,7 @@ export default function FigmaPickerContentScript() {
           setInspectedCss(null)
         }}
         onCapturePage={handleCaptureFullPage}
-        onCopyAll={handleCopyAll}
         onClose={handleClose}
-        capturedItems={capturedItems}
-        onSelectCapturedItem={(item) => {
-          copyDirectToFigmaClipboard(item.doc)
-          setCapturedDoc(item.doc)
-          setInspectedCss(null)
-        }}
         isDarkMode={isDarkMode}
         isCapturingPage={isCapturingPage}
       />

@@ -136,9 +136,10 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
             <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
               Player Timeline Button
             </span>
-            <Badge variant={settings.enabled ? "success" : "neutral"} size="sm">
+            <Badge variant={settings.enabled ? "success" : "neutral"}>
               {settings.enabled ? "Active" : "Disabled"}
             </Badge>
+
           </div>
           <span className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 mt-0.5">
             Inject switch button into YouTube video controls
@@ -279,8 +280,9 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
           value={testUrl}
           onChange={(e) => handleUrlChange(e.target.value)}
           icon={<Tv size={13} />}
-          size="sm"
+          className="text-xs h-8"
         />
+
 
         {convertedUrl && (
           <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-850 border border-neutral-200/80 dark:border-neutral-800">

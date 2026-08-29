@@ -1,8 +1,13 @@
 import { create } from "zustand"
-import { EXTENSION_REGISTRY, type ExtensionManifestItem } from "../lib/registry"
+import {
+  EXTENSION_REGISTRY,
+  filterAndSortExtensions,
+  type ExtensionManifestItem,
+  type SortOption
+} from "../lib/registry"
 import { ExtensionStorage } from "../lib/storage"
 
-export type SortOption = "number" | "stars" | "likes" | "name"
+export type { SortOption }
 
 interface HubStoreState {
   pinnedIds: string[]
@@ -100,48 +105,12 @@ export const useHubStore = create<HubStoreState>((set, get) => ({
 
   getFilteredCatalogExtensions: () => {
     const { searchQuery, catalogCategory, catalogSortBy, starredIds, likedIds } = get()
-    
-    let list = [...EXTENSION_REGISTRY]
-
-    // Category filter
-    if (catalogCategory !== "All") {
-      list = list.filter((ext) => ext.category === catalogCategory)
-    }
-
-    // Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim()
-      list = list.filter(
-        (ext) =>
-          ext.name.toLowerCase().includes(q) ||
-          ext.shortName.toLowerCase().includes(q) ||
-          ext.description.toLowerCase().includes(q) ||
-          ext.category.toLowerCase().includes(q) ||
-          ext.tags.some((t) => t.toLowerCase().includes(q))
-      )
-    }
-
-    // Sorting
-    list.sort((a, b) => {
-      if (catalogSortBy === "number") {
-        return a.number - b.number
-      }
-      if (catalogSortBy === "stars") {
-        const aStars = a.stars + (starredIds.includes(a.id) ? 1 : 0)
-        const bStars = b.stars + (starredIds.includes(b.id) ? 1 : 0)
-        return bStars - aStars
-      }
-      if (catalogSortBy === "likes") {
-        const aLikes = a.likes + (likedIds.includes(a.id) ? 1 : 0)
-        const bLikes = b.likes + (likedIds.includes(b.id) ? 1 : 0)
-        return bLikes - aLikes
-      }
-      if (catalogSortBy === "name") {
-        return a.name.localeCompare(b.name)
-      }
-      return 0
+    return filterAndSortExtensions(EXTENSION_REGISTRY, {
+      category: catalogCategory,
+      query: searchQuery,
+      sortBy: catalogSortBy,
+      starredIds,
+      likedIds
     })
-
-    return list
   }
 }))

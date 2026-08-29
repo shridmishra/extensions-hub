@@ -4,7 +4,6 @@ import type { ExtractedStyles } from "../../lib/css-extractor"
 import { copyToClipboard } from "../../lib/utils"
 import Button from "../ui/Button"
 import IconButton from "../ui/IconButton"
-import Badge from "../ui/Badge"
 import Tabs from "../ui/Tabs"
 
 interface CssInspectorModalProps {
@@ -53,11 +52,12 @@ const CssInspectorModal: React.FC<CssInspectorModalProps> = ({
     <div
       style={{
         position: "fixed",
-        bottom: "24px",
-        right: "24px",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
         zIndex: 2147483647,
-        width: "380px",
-        maxWidth: "calc(100vw - 48px)",
+        width: "420px",
+        maxWidth: "calc(100vw - 32px)",
         maxHeight: "90vh"
       }}
       className={`hub-extension-root ${isDarkMode ? "dark" : ""} animate-scale-in text-neutral-900 dark:text-neutral-100 select-none flex flex-col`}
@@ -65,41 +65,53 @@ const CssInspectorModal: React.FC<CssInspectorModalProps> = ({
       <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[86vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-900/40 shrink-0">
-          <div className="flex items-center gap-2 overflow-hidden mr-2">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-6 h-6 rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 flex items-center justify-center shadow-xs shrink-0">
-              <Code size={13} className="stroke-[2.5]" />
+              <Code size={14} className="stroke-[2.5]" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1.5 overflow-hidden">
-                <h3 className="text-xs font-black tracking-tight text-neutral-900 dark:text-neutral-50 shrink-0">
-                  &lt;{styles.tagName.toLowerCase()}&gt;
-                </h3>
-                {selectorText && (
-                  <Badge variant="muted" className="text-[9px] py-0 px-1 font-mono truncate max-w-[140px]">
+            <div className="flex items-center gap-2 truncate">
+              <h3 className="text-sm font-black tracking-tight text-neutral-900 dark:text-neutral-50 shrink-0">
+                &lt;{styles.tagName.toLowerCase()}&gt;
+              </h3>
+              {selectorText && (
+                <>
+                  <span className="text-neutral-400 dark:text-neutral-600 text-xs">•</span>
+                  <span className="text-xs font-mono font-medium text-neutral-500 dark:text-neutral-400 truncate">
                     {selectorText}
-                  </Badge>
-                )}
-              </div>
-              <span className="text-[10px] font-mono font-medium text-neutral-400 dark:text-neutral-500 leading-none mt-0.5">
+                  </span>
+                </>
+              )}
+              <span className="text-neutral-400 dark:text-neutral-600 text-xs">•</span>
+              <span className="text-xs font-mono font-medium text-neutral-400 dark:text-neutral-500 truncate">
                 {styles.dimensions.width} × {styles.dimensions.height}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            <IconButton size="sm" variant="ghost" onClick={onClose} title="Close Inspector">
-              <X size={14} className="stroke-[2.5]" />
-            </IconButton>
-          </div>
+          <IconButton
+            size="md"
+            variant="ghost"
+            onClick={onClose}
+            title="Close (Esc)"
+            aria-label="Close"
+            className="shrink-0 h-8 w-8 rounded-lg"
+          >
+            <X size={16} className="stroke-[2.2]" />
+          </IconButton>
         </div>
 
         {/* Content Area */}
         <div className="p-4 flex flex-col gap-3 min-h-0 bg-white dark:bg-neutral-950 overflow-y-auto hub-scrollbar">
           {/* Auto-Copied Banner */}
           {autoCopiedShow && (
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900/60 border border-neutral-200/60 dark:border-neutral-800/60 text-neutral-700 dark:text-neutral-300 text-[11px] font-semibold transition-all duration-300">
-              <CheckCircle2 className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400 shrink-0" />
-              <span>Tailwind CSS copied to clipboard!</span>
+            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 text-sm font-bold">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Tailwind CSS copied to clipboard</span>
+              </div>
+              <kbd className="px-2 py-0.5 rounded-md bg-neutral-200/80 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-xs font-mono font-bold text-neutral-800 dark:text-neutral-200 shadow-2xs">
+                ⌘V
+              </kbd>
             </div>
           )}
 
@@ -113,15 +125,15 @@ const CssInspectorModal: React.FC<CssInspectorModalProps> = ({
 
           {/* Code Viewer Box */}
           <div className="relative rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/70 overflow-hidden flex flex-col font-mono min-h-[130px] max-h-[220px]">
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-neutral-200/80 dark:border-neutral-800/80 text-[9.5px] font-bold text-neutral-400 dark:text-neutral-500 tracking-wider uppercase shrink-0">
-              <span className="flex items-center gap-1">
-                <Code className="w-3 h-3" />
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-neutral-200/80 dark:border-neutral-800/80 text-[10px] font-bold text-neutral-400 dark:text-neutral-500 tracking-wider uppercase shrink-0">
+              <span className="flex items-center gap-1.5">
+                <Code className="w-3.5 h-3.5" />
                 {activeTab === "css" ? "CSS Ruleset" : "Tailwind Classes"}
               </span>
             </div>
 
             <div
-              className="flex-1 overflow-y-auto p-3 text-[11.5px] font-mono leading-relaxed text-neutral-800 dark:text-neutral-200 select-text whitespace-pre-wrap break-all hub-scrollbar"
+              className="flex-1 overflow-y-auto p-3 text-xs font-mono leading-relaxed text-neutral-800 dark:text-neutral-200 select-text whitespace-pre-wrap break-all hub-scrollbar"
               style={{ overscrollBehavior: "contain" }}
             >
               <code>{activeTab === "css" ? styles.rawCSS : styles.tailwindClasses}</code>
@@ -133,16 +145,16 @@ const CssInspectorModal: React.FC<CssInspectorModalProps> = ({
             variant="primary"
             size="md"
             onClick={handleCopy}
-            className="w-full h-8 text-xs font-bold gap-1.5"
+            className="w-full h-9 text-sm font-bold gap-2"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-4 h-4" />
                 <span>Copied to Clipboard!</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-4 h-4" />
                 <span>Copy {activeTab === "css" ? "CSS Ruleset" : "Tailwind Classes"}</span>
               </>
             )}
@@ -150,9 +162,13 @@ const CssInspectorModal: React.FC<CssInspectorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 bg-neutral-50/80 dark:bg-neutral-900/60 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500 shrink-0">
-          <span>Click element to inspect / Esc to close</span>
-          <span className="font-mono">{activeTab === "css" ? "Raw CSS" : "Tailwind"}</span>
+        <div className="px-4 py-2.5 bg-neutral-50/80 dark:bg-neutral-900/60 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
+          <div className="flex items-center gap-1.5 font-medium">
+            <span>Click element to inspect</span>
+            <span>•</span>
+            <span>Esc to close</span>
+          </div>
+          <span className="font-mono font-semibold">{activeTab === "css" ? "Raw CSS" : "Tailwind"}</span>
         </div>
       </div>
     </div>

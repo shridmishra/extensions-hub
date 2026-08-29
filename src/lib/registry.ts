@@ -81,7 +81,7 @@ export const EXTENSION_REGISTRY: ExtensionManifestItem[] = [
     description: "Capture elements or entire webpages into multi-layer Figma vectors. Direct canvas paste with ⌘+V preserving clip-paths and fonts.",
     category: "Color & Design",
     type: "interactive",
-    icon: "Layers",
+    icon: "Figma",
     stars: 3450,
     likes: 9120,
     defaultPinned: true,
@@ -119,7 +119,7 @@ export const EXTENSION_REGISTRY: ExtensionManifestItem[] = [
     defaultPinned: false,
     defaultEnabled: false,
     tags: ["ruler", "measure", "dimensions", "pixels", "layout"],
-    isImplemented: true
+    isImplemented: false
   },
   {
     id: "link-grabber",
@@ -135,7 +135,7 @@ export const EXTENSION_REGISTRY: ExtensionManifestItem[] = [
     defaultPinned: false,
     defaultEnabled: false,
     tags: ["links", "extractor", "urls", "export", "media"],
-    isImplemented: true
+    isImplemented: false
   },
   {
     id: "css-debugger",
@@ -151,7 +151,7 @@ export const EXTENSION_REGISTRY: ExtensionManifestItem[] = [
     defaultPinned: false,
     defaultEnabled: false,
     tags: ["css", "grid", "flexbox", "debug", "layout"],
-    isImplemented: true
+    isImplemented: false
   },
   {
     id: "yt-music-redirect",
@@ -170,4 +170,78 @@ export const EXTENSION_REGISTRY: ExtensionManifestItem[] = [
     isImplemented: true
   }
 ]
+
+export type SortOption = "number" | "stars" | "likes" | "name"
+
+export interface FilterCatalogOptions {
+  category?: string
+  query?: string
+  sortBy?: SortOption
+  starredIds?: string[]
+  likedIds?: string[]
+}
+
+/**
+ * Pure filter and sort utility for the micro-extension catalog.
+ */
+export function filterAndSortExtensions(
+  extensions: ExtensionManifestItem[],
+  options: FilterCatalogOptions = {}
+): ExtensionManifestItem[] {
+  const {
+    category = "All",
+    query = "",
+    sortBy = "number",
+    starredIds = [],
+    likedIds = []
+  } = options
+
+  let list = [...extensions]
+
+  // Category filter
+  if (category !== "All") {
+    list = list.filter((ext) => ext.category === category)
+  }
+
+  // Search query filter
+  if (query.trim()) {
+    const q = query.toLowerCase().trim()
+    list = list.filter(
+      (ext) =>
+        ext.name.toLowerCase().includes(q) ||
+        ext.shortName.toLowerCase().includes(q) ||
+        ext.description.toLowerCase().includes(q) ||
+        ext.category.toLowerCase().includes(q) ||
+        ext.tags.some((t) => t.toLowerCase().includes(q))
+    )
+  }
+
+  // Sorting
+  list.sort((a, b) => {
+    if (sortBy === "number") {
+      return a.number - b.number
+    }
+    if (sortBy === "stars") {
+      const aStars = a.stars + (starredIds.includes(a.id) ? 1 : 0)
+      const bStars = b.stars + (starredIds.includes(b.id) ? 1 : 0)
+      return bStars - aStars
+    }
+    if (sortBy === "likes") {
+      const aLikes = a.likes + (likedIds.includes(a.id) ? 1 : 0)
+      const bLikes = b.likes + (likedIds.includes(b.id) ? 1 : 0)
+      return bLikes - aLikes
+    }
+    if (sortBy === "name") {
+      return a.name.localeCompare(b.name)
+    }
+    return 0
+  })
+
+  return list
+}
+
+export function getExtensionById(id: string): ExtensionManifestItem | undefined {
+  return EXTENSION_REGISTRY.find((ext) => ext.id === id)
+}
+
 

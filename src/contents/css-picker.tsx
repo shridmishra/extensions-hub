@@ -68,7 +68,6 @@ export default function CssPickerContentScript() {
   const [capturedItems, setCapturedItems] = useState<CapturedItem[]>([])
   const [isCapturingPage, setIsCapturingPage] = useState<boolean>(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
-  const [modalPos, setModalPos] = useState({ x: Math.max(20, window.innerWidth - 390), y: 80 })
   const overlayRef = useRef<HTMLDivElement>(null)
 
   // Watch activation and mutual exclusion
@@ -201,17 +200,6 @@ export default function CssPickerContentScript() {
 
     if (!target || target.closest(".hub-extension-root")) return
 
-    const targetRect = target.getBoundingClientRect()
-    const targetX = targetRect.right + 20
-    const targetY = Math.max(80, targetRect.top)
-    const maxX = window.innerWidth - 380
-    const maxY = window.innerHeight - 100
-
-    setModalPos({
-      x: Math.max(10, Math.min(maxX, targetX > maxX ? targetRect.left - 380 : targetX)),
-      y: Math.max(80, Math.min(maxY, targetY))
-    })
-
     if (currentMode === "figma-element") {
       try {
         const doc = await convertElementToIRAsync(target)
@@ -255,11 +243,6 @@ export default function CssPickerContentScript() {
       }
       setCapturedItems((prev) => [...prev, newItem])
 
-      setModalPos({
-        x: Math.max(10, window.innerWidth - 390),
-        y: 80
-      })
-
       return doc
     } finally {
       setIsCapturingPage(false)
@@ -295,7 +278,7 @@ export default function CssPickerContentScript() {
 
   return (
     <div className={`hub-extension-root ${isDarkMode ? "dark" : ""} text-neutral-900 dark:text-neutral-100 antialiased`}>
-      {/* 1. Seamless Floating Island Toolbar at Top Center */}
+      {/* 1. Seamless Floating Island Toolbar Centered at Top */}
       <FigmaIslandToolbar
         currentMode={currentMode}
         onModeChange={(mode) => {
@@ -304,14 +287,7 @@ export default function CssPickerContentScript() {
           setCapturedDoc(null)
         }}
         onCapturePage={handleCaptureFullPage}
-        onCopyAll={handleCopyAll}
         onClose={handleClose}
-        capturedItems={capturedItems}
-        onSelectCapturedItem={(item) => {
-          copyDirectToFigmaClipboard(item.doc)
-          setCapturedDoc(item.doc)
-          setInspectedStyles(null)
-        }}
         isDarkMode={isDarkMode}
         isCapturingPage={isCapturingPage}
       />
@@ -347,13 +323,13 @@ export default function CssPickerContentScript() {
               height: `${hoveredRect.height}px`,
               position: "fixed",
               zIndex: 2147483645,
-              pointerEvents: "none",
-              border: isFigmaMode
-                ? isDarkMode ? "2px solid #a855f7" : "2px solid #9333ea"
-                : isDarkMode ? "2px solid #3b82f6" : "2px solid #2563eb",
-              backgroundColor: isFigmaMode ? "rgba(168, 85, 247, 0.08)" : "rgba(59, 130, 246, 0.08)"
+              pointerEvents: "none"
             }}
-            className="rounded-xs transition-all duration-75"
+            className={`rounded-xs transition-all duration-75 border-2 ${
+              isFigmaMode
+                ? "border-purple-500 bg-purple-500/10"
+                : "border-blue-500 bg-blue-500/10"
+            }`}
           />
 
           <div
@@ -364,7 +340,7 @@ export default function CssPickerContentScript() {
               zIndex: 2147483646,
               pointerEvents: "none"
             }}
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded ${
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
               isFigmaMode ? "bg-purple-600" : "bg-blue-600"
             } text-white shadow-md font-mono text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]`}
           >
@@ -386,8 +362,6 @@ export default function CssPickerContentScript() {
             styles={inspectedStyles}
             onClose={() => setInspectedStyles(null)}
             isDarkMode={isDarkMode}
-            position={modalPos}
-            setPosition={setModalPos}
           />
         </div>
       )}
@@ -399,8 +373,6 @@ export default function CssPickerContentScript() {
             document={capturedDoc}
             onClose={() => setCapturedDoc(null)}
             isDarkMode={isDarkMode}
-            position={modalPos}
-            setPosition={setModalPos}
           />
         </div>
       )}
