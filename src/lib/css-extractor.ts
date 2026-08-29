@@ -1,26 +1,13 @@
-export interface CSSProperty {
-  name: string
-  value: string
-  category: string
-}
+import type {
+  CSSProperty,
+  BoxModelData,
+  ExtractedStyles
+} from "../types/css-inspector"
 
-export interface BoxModelData {
-  margin: { top: string; right: string; bottom: string; left: string }
-  border: { top: string; right: string; bottom: string; left: string }
-  padding: { top: string; right: string; bottom: string; left: string }
-  width: string
-  height: string
-}
-
-export interface ExtractedStyles {
-  tagName: string
-  className: string
-  id: string
-  dimensions: { width: string; height: string }
-  categories: Record<string, CSSProperty[]>
-  boxModel: BoxModelData
-  rawCSS: string
-  tailwindClasses: string
+export type {
+  CSSProperty,
+  BoxModelData,
+  ExtractedStyles
 }
 
 const CATEGORY_MAP: Record<string, string> = {

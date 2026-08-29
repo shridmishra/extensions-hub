@@ -1,27 +1,17 @@
-export type ExtensionCategory = 
-  | "Typography"
-  | "Color & Design"
-  | "Accessibility"
-  | "Developer"
-  | "Utility"
+import type {
+  ExtensionCategory,
+  ExtensionType,
+  ExtensionManifestItem,
+  CatalogSortBy,
+  CatalogFilterOptions
+} from "../types/registry"
 
-export type ExtensionType = "interactive" | "background"
-
-export interface ExtensionManifestItem {
-  id: string
-  number: number
-  name: string
-  shortName: string
-  description: string
-  category: ExtensionCategory
-  type: ExtensionType
-  icon: string
-  stars: number
-  likes: number
-  defaultPinned: boolean
-  defaultEnabled: boolean
-  tags: string[]
-  isImplemented: boolean
+export type {
+  ExtensionCategory,
+  ExtensionType,
+  ExtensionManifestItem,
+  CatalogSortBy,
+  CatalogFilterOptions
 }
 
 export const EXTENSION_REGISTRY: ExtensionManifestItem[] = [

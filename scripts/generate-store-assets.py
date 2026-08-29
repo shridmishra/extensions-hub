@@ -15,8 +15,8 @@ import sys
 import math
 from PIL import Image, ImageDraw, ImageFont
 
-# Add project root to sys.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add scripts directory to sys.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from generate_icon import render_icon_png, get_petal_polygon
 
 

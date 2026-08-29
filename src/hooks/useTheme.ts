@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
 import { ExtensionStorage } from "../lib/storage"
+import type { Theme, ResolvedTheme } from "../types/theme"
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<"light" | "dark" | "system">("light")
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light")
+  const [theme, setThemeState] = useState<Theme>("light")
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("light")
 
   useEffect(() => {
     ExtensionStorage.getTheme().then((savedTheme) => {

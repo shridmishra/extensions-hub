@@ -1,13 +1,10 @@
 import { create } from "zustand"
-import {
-  EXTENSION_REGISTRY,
-  filterAndSortExtensions,
-  type ExtensionManifestItem,
-  type SortOption
-} from "../lib/registry"
+import { EXTENSION_REGISTRY, filterAndSortExtensions } from "../lib/registry"
 import { ExtensionStorage } from "../lib/storage"
+import type { ExtensionManifestItem, CatalogSortBy } from "../types/registry"
 
-export type { SortOption }
+export type SortOption = CatalogSortBy
+export type { CatalogSortBy }
 
 interface HubStoreState {
   pinnedIds: string[]

@@ -321,3 +321,6 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
     </Modal>
   )
 }
+
+export default YtMusicSettingsModal
+

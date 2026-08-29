@@ -6,29 +6,16 @@
  * are detected and rejected.
  */
 
-export interface ParsedRgba {
-  r: number // 0 - 255
-  g: number // 0 - 255
-  b: number // 0 - 255
-  a: number // 0 - 1
-}
+import type {
+  ParsedRgba,
+  ColorValidationResult,
+  BatchValidationResult
+} from "../types/colors"
 
-export interface ColorValidationResult {
-  isValid: boolean
-  isBlack: boolean
-  isWhite: boolean
-  color: string
-  normalizedHex?: string
-  reason?: string
-}
-
-export interface BatchValidationResult {
-  passed: boolean
-  totalChecked: number
-  validCount: number
-  failedCount: number
-  offendingColors: string[]
-  validColors: string[]
+export type {
+  ParsedRgba,
+  ColorValidationResult,
+  BatchValidationResult
 }
 
 /**

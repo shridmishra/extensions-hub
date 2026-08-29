@@ -8,7 +8,7 @@ export interface TabItem {
   badge?: number | string
 }
 
-interface TabsProps {
+export interface TabsProps {
   tabs: TabItem[]
   activeTab: string
   onChange: (id: any) => void

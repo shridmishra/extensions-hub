@@ -48,12 +48,16 @@ flowchart TB
 
 ## 📦 Directory Structure
 
+## 📦 Directory Structure
+
 ```
-extension-hub/
+extensions-hub/
 ├── assets/                    # Static extension icons, fonts (Satoshi WOFF2)
 ├── build/                     # Compiled outputs (chrome-mv3-dev / chrome-mv3-prod)
 ├── scripts/                   # Developer automation & scaffolding scripts
-│   └── create-extension.mjs   # CLI generator for new micro-extensions
+│   ├── create-extension.mjs   # CLI generator for new micro-extensions
+│   ├── generate_icon.py       # High-res Black & White / theme icon generator
+│   └── generate-store-assets.py # Chrome Web Store promo tile & screenshot generator
 ├── templates/                 # Boilerplate templates for extensions
 │   ├── interactive-extension.template.tsx
 │   └── background-extension.template.ts
@@ -62,24 +66,56 @@ extension-hub/
 │   ├── extensions-completeness.test.ts
 │   ├── design-lint.test.ts
 │   ├── hub-store.test.ts
+│   ├── dark-mode.test.ts
 │   └── color-detector.test.ts
 ├── src/
 │   ├── background/            # Background service worker entrypoint
 │   │   └── index.ts
-│   ├── components/            # UI components
+│   ├── components/            # UI components and modules
 │   │   ├── extensions/        # Extension-specific modals & inspection panels
+│   │   │   └── index.ts       # Modular barrel export
 │   │   ├── hub/               # Core hub cards, icon mapper, catalog modal
-│   │   └── ui/                # Reusable design system primitives
+│   │   │   └── index.ts       # Modular barrel export
+│   │   ├── icons/             # Dedicated custom SVG brand logos & badges
+│   │   │   └── index.ts       # Modular barrel export
+│   │   ├── ui/                # Reusable design system primitives
+│   │   │   └── index.ts       # Modular barrel export
+│   │   └── index.ts           # Unified components barrel export
 │   ├── constants/             # Shared constants & defaults
+│   │   ├── defaults.ts
+│   │   └── index.ts           # Modular barrel export
 │   ├── contents/              # Content scripts for each micro-extension
 │   ├── converter/             # Specialized DOM-to-Vector / IR transformation engines
-│   ├── hooks/                 # React custom hooks (useTheme, useLocalStorage)
-│   ├── lib/                   # Core libraries
-│   │   ├── registry.ts        # Single source of truth extension catalog & filter utilities
+│   │   ├── clip-path/
+│   │   ├── clipboard/
+│   │   ├── css/
+│   │   ├── dom/
+│   │   ├── svg/
+│   │   └── index.ts
+│   ├── hooks/                 # Custom React hooks (useTheme)
+│   │   ├── useTheme.ts
+│   │   └── index.ts           # Modular barrel export
+│   ├── lib/                   # Core libraries and helpers
+│   │   ├── colors.ts          # Color conversion algorithms (hexToRgb, hexToHsl, etc.)
+│   │   ├── color-detector.ts  # Black & white color validation engine
+│   │   ├── color-names.ts     # Color name dictionary
+│   │   ├── css-extractor.ts   # DOM-to-CSS computed styles extractor
+│   │   ├── registry.ts        # Central extension catalog & query methods
 │   │   ├── storage.ts         # Plasmo storage abstraction & mutual exclusion manager
-│   │   └── utils.ts           # String helpers, clipboard utilities
+│   │   ├── toast.ts           # Dynamic on-page floating toast injector
+│   │   ├── utils.ts           # Clipboard, classnames, ID generators
+│   │   └── index.ts           # Modular barrel export
 │   ├── store/                 # Global Zustand state management
-│   │   └── hub-store.ts
+│   │   ├── hub-store.ts
+│   │   └── index.ts           # Modular barrel export
+│   ├── types/                 # Centralized, modular TypeScript definitions
+│   │   ├── colors.ts          # Color validation & RGBA types
+│   │   ├── css-inspector.ts   # Style extraction & inspection models
+│   │   ├── ir.ts              # Figma Intermediate Representation (IR) schemas
+│   │   ├── registry.ts        # Extension metadata & category interfaces
+│   │   ├── storage.ts         # Storage models & settings schemas
+│   │   ├── theme.ts           # Theme definitions
+│   │   └── index.ts           # Master types barrel export
 │   ├── popup.tsx              # Main popup window component
 │   └── style.css              # Global design tokens and Tailwind directives
 ├── package.json

@@ -394,3 +394,6 @@ export const DarkModeSettingsModal: React.FC<DarkModeSettingsModalProps> = ({
     </Modal>
   )
 }
+
+export default DarkModeSettingsModal
+

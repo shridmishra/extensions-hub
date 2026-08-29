@@ -1,24 +1,24 @@
 import { Storage } from "@plasmohq/storage"
 import { EXTENSION_REGISTRY } from "./registry.ts"
+import type {
+  DarkPreset,
+  LightPreset,
+  DarkModeSettings,
+  ColorHistoryItem,
+  FontHistoryItem,
+  YtMusicSettings
+} from "../types/storage"
+
+export type {
+  DarkPreset,
+  LightPreset,
+  DarkModeSettings,
+  ColorHistoryItem,
+  FontHistoryItem,
+  YtMusicSettings
+}
 
 export const storage = new Storage({ area: "local" })
-
-export type DarkPreset = "midnight" | "oled" | "slate" | "charcoal"
-export type LightPreset = "pure-white" | "warm-paper" | "cool-ice"
-
-export interface DarkModeSettings {
-  mode: "dark" | "light"
-  globalEnabled: boolean
-  darkPreset: DarkPreset
-  lightPreset: LightPreset
-  brightness: number
-  contrast: number
-  sepia: number
-  grayscale: number
-  preserveMedia: boolean
-  dimMediaInDark: boolean
-  siteOverrides: Record<string, boolean>
-}
 
 export const DEFAULT_DARK_MODE_SETTINGS: DarkModeSettings = {
   mode: "dark",
@@ -32,32 +32,6 @@ export const DEFAULT_DARK_MODE_SETTINGS: DarkModeSettings = {
   preserveMedia: true,
   dimMediaInDark: false,
   siteOverrides: {}
-}
-
-export interface ColorHistoryItem {
-  hex: string
-  rgb: string
-  hsl: string
-  name?: string
-  timestamp: number
-}
-
-export interface FontHistoryItem {
-  fontFamily: string
-  fontSize: string
-  fontWeight: string
-  color: string
-  timestamp: number
-}
-
-export interface YtMusicSettings {
-  enabled: boolean
-  openInNewTab: boolean
-  preserveTimestamp: boolean
-  preservePlaylist: boolean
-  preferSongVersion: boolean
-  buttonPosition: "right" | "left"
-  autoPause: boolean
 }
 
 export const DEFAULT_YT_MUSIC_SETTINGS: YtMusicSettings = {

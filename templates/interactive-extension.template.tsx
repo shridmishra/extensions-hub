@@ -3,7 +3,8 @@ import satoshiFontUrl from "url:~assets/Satoshi-Regular.woff2"
 import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo"
 import React, { useEffect, useState } from "react"
 import { Storage } from "@plasmohq/storage"
-import { ExtensionStorage } from "../src/lib/storage"
+import { X } from "lucide-react"
+import { IconButton } from "../src/components/ui"
 
 /**
  * Configure which pages this interactive micro-extension runs on.
@@ -35,7 +36,9 @@ export const getStyle: PlasmoGetStyle = () => {
   }
 
   const style = document.createElement("style")
-  style.textContent = cssText + `
+  style.textContent =
+    cssText +
+    `
     :host {
       position: fixed !important;
       top: 0 !important;
@@ -113,17 +116,20 @@ export default function InteractiveExtensionContentScript() {
   return (
     <div className={`hub-extension-root ${isDarkMode ? "dark" : ""}`}>
       {/* On-Page Inspector / Tool Overlay */}
-      <div className="fixed top-4 right-4 z-[2147483647] p-4 rounded-xl bg-white dark:bg-[#09090b] text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-800 shadow-2xl flex flex-col gap-3 min-w-[280px]">
+      <div className="fixed top-4 right-4 z-[2147483647] p-4 rounded-xl bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-800 shadow-2xl flex flex-col gap-3 min-w-[280px]">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold font-mono tracking-tight">
             __EXTENSION_NAME__
           </span>
-          <button
+          <IconButton
+            size="sm"
+            variant="ghost"
             onClick={handleDeactivate}
-            className="text-xs text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+            aria-label="Close"
+            title="Close"
           >
-            ✕
-          </button>
+            <X size={14} />
+          </IconButton>
         </div>
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
           __EXTENSION_DESCRIPTION__

@@ -21,10 +21,12 @@ import {
   Headphones,
   Disc
 } from "lucide-react"
-import FigmaIcon from "../ui/FigmaIcon"
-import CssIcon from "../ui/CssIcon"
-import YtMusicIcon from "../ui/YtMusicIcon"
-import YouTubeIcon from "../ui/YouTubeIcon"
+import {
+  FigmaIcon,
+  CssIcon,
+  YtMusicIcon,
+  YouTubeIcon
+} from "../icons"
 
 interface ExtensionIconProps {
   name: string

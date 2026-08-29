@@ -201,18 +201,18 @@ def generate_svg(
             return (
                 f"M {x0:.2f} {y1:.2f} "
                 f"L {x0:.2f} {y0+r:.2f} "
-                f"A {r:.2f} {r:.2f} 0 0 1 {x0+r:.2f} {y0:.2f} "
+                f"A {r:.2f} {r:.2f} 0 0 1 {x0:.2f} {y0:.2f} "
                 f"L {x1-r:.2f} {y0:.2f} "
                 f"A {r:.2f} {r:.2f} 0 0 1 {x1:.2f} {y0+r:.2f} "
                 f"L {x1:.2f} {y1-r:.2f} "
-                f"A {r:.2f} {r:.2f} 0 0 1 {x1-r:.2f} {y1:.2f} "
+                f"A {r:.2f} {r:.2f} 0 0 1 {x1:.2f} {y1:.2f} "
                 f"Z"
             )
         elif sharp == "tr":
             return (
                 f"M {x1:.2f} {y0:.2f} "
                 f"L {x1:.2f} {y1-r:.2f} "
-                f"A {r:.2f} {r:.2f} 0 0 1 {x1-r:.2f} {y1:.2f} "
+                f"A {r:.2f} {r:.2f} 0 0 1 {x1:.2f} {y1:.2f} "
                 f"L {x0+r:.2f} {y1:.2f} "
                 f"A {r:.2f} {r:.2f} 0 0 1 {x0:.2f} {y1-r:.2f} "
                 f"L {x0:.2f} {y0+r:.2f} "
@@ -225,7 +225,7 @@ def generate_svg(
                 f"L {x1-r:.2f} {y0:.2f} "
                 f"A {r:.2f} {r:.2f} 0 0 1 {x1:.2f} {y0+r:.2f} "
                 f"L {x1:.2f} {y1-r:.2f} "
-                f"A {r:.2f} {r:.2f} 0 0 1 {x1-r:.2f} {y1:.2f} "
+                f"A {r:.2f} {r:.2f} 0 0 1 {x1:.2f} {y1-r:.2f} "
                 f"L {x0+r:.2f} {y1:.2f} "
                 f"A {r:.2f} {r:.2f} 0 0 1 {x0:.2f} {y1-r:.2f} "
                 f"Z"

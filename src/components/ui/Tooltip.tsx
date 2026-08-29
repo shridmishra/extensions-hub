@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import { cn } from "../../lib/utils"
 
-interface TooltipProps {
+export interface TooltipProps {
   content: React.ReactNode
   children: React.ReactNode
   position?: "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right"

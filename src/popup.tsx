@@ -1,73 +1,22 @@
 import React, { useEffect, useState } from "react"
-import {
-  Search,
-  Moon,
-  Sun,
-  Plus
-} from "lucide-react"
-import HubLogo from "./components/ui/HubLogo"
-import { useHubStore } from "./store/hub-store"
-import { useTheme } from "./hooks/useTheme"
-import { SquareExtensionCard } from "./components/hub/SquareExtensionCard"
-import { ExtensionCatalogModal } from "./components/hub/ExtensionCatalogModal"
-import { YtMusicSettingsModal } from "./components/extensions/YtMusicSettingsModal"
-import { DarkModeSettingsModal } from "./components/extensions/DarkModeSettingsModal"
+import { Search, Moon, Sun, Plus } from "lucide-react"
+import { HubLogo } from "./components/icons"
+import { Button, IconButton } from "./components/ui"
+import { SquareExtensionCard, ExtensionCatalogModal } from "./components/hub"
+import { YtMusicSettingsModal, DarkModeSettingsModal } from "./components/extensions"
+import { useHubStore } from "./store"
+import { useTheme } from "./hooks"
 import {
   ExtensionStorage,
-  storage,
   activateInteractiveTool,
-  INTERACTIVE_TOOLS
-} from "./lib/storage"
-
-import { copyToClipboard } from "./lib/utils"
-import { getColorName } from "./lib/color-names"
-import IconButton from "./components/ui/IconButton"
-import Button from "./components/ui/Button"
+  INTERACTIVE_TOOLS,
+  copyToClipboard,
+  getColorName,
+  hexToRgb,
+  hexToHsl,
+  injectColorToast
+} from "./lib"
 import "./style.css"
-
-function hexToRgb(hex: string): string {
-  let c = hex.replace("#", "")
-  if (c.length === 3) {
-    c = c.split("").map((x) => x + x).join("")
-  }
-  const num = parseInt(c, 16) || 0
-  return `rgb(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255})`
-}
-
-function hexToHsl(hex: string): string {
-  let c = hex.replace("#", "")
-  if (c.length === 3) {
-    c = c.split("").map((x) => x + x).join("")
-  }
-  const r = (parseInt(c.substring(0, 2), 16) || 0) / 255
-  const g = (parseInt(c.substring(2, 4), 16) || 0) / 255
-  const b = (parseInt(c.substring(4, 6), 16) || 0) / 255
-
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  let h = 0
-  let s = 0
-  const l = (max + min) / 2
-
-  if (max !== min) {
-    const d = max - min
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0)
-        break
-      case g:
-        h = (b - r) / d + 2
-        break
-      case b:
-        h = (r - g) / d + 4
-        break
-    }
-    h /= 6
-  }
-
-  return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`
-}
 
 function IndexPopup() {
   const {
@@ -84,7 +33,6 @@ function IndexPopup() {
   const [isYtMusicModalOpen, setIsYtMusicModalOpen] = useState(false)
   const [isDarkModeModalOpen, setIsDarkModeModalOpen] = useState(false)
   const { resolvedTheme, toggleTheme } = useTheme()
-
 
   useEffect(() => {
     loadAllState()
@@ -103,7 +51,7 @@ function IndexPopup() {
   const handleLaunchExtension = async (extensionId: string) => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-      
+
       if (extensionId === "color-picker") {
         if ("EyeDropper" in window) {
           try {
@@ -120,68 +68,13 @@ function IndexPopup() {
               await ExtensionStorage.addColorHistory({ hex, rgb, hsl, name: colorName })
 
               if (tab?.id) {
-                await chrome.scripting.executeScript({
-                  target: { tabId: tab.id },
-                  func: (pickedHex: string, pickedRgb: string, name: string) => {
-                    const existing = document.getElementById("hub-color-toast-overlay")
-                    if (existing) existing.remove()
-
-                    const toast = document.createElement("div")
-                    toast.id = "hub-color-toast-overlay"
-                    toast.style.cssText = `
-                      position: fixed !important;
-                      bottom: 24px !important;
-                      right: 24px !important;
-                      z-index: 2147483647 !important;
-                      display: flex !important;
-                      align-items: center !important;
-                      gap: 10px !important;
-                      padding: 8px 14px 8px 10px !important;
-                      background: #09090b !important;
-                      color: #ffffff !important;
-                      border: 1px solid rgba(255, 255, 255, 0.12) !important;
-                      border-radius: 9999px !important;
-                      box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.2) !important;
-                      font-family: 'Geist Mono', -apple-system, system-ui, monospace !important;
-                      animation: hubToastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-                      user-select: none !important;
-                      -webkit-font-smoothing: antialiased !important;
-                    `
-
-                    toast.innerHTML = `
-                      <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap');
-                        @keyframes hubToastIn {
-                          from { opacity: 0; transform: translateY(8px) scale(0.96); }
-                          to { opacity: 1; transform: translateY(0) scale(1); }
-                        }
-                      </style>
-                      <div style="width: 18px; height: 18px; border-radius: 9999px; background-color: ${pickedHex}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25), 0 0 0 1px rgba(0,0,0,0.5); flex-shrink: 0;"></div>
-                      <div style="display: flex; align-items: center; gap: 6px; line-height: 1;">
-                        <span style="font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: -0.01em; color: #fafafa; font-feature-settings: 'tnum' 1;">${pickedHex}</span>
-                        <span style="color: rgba(255,255,255,0.3); font-size: 10px;">•</span>
-                        <span style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em;">${name}</span>
-                      </div>
-                      <span style="color: rgba(255,255,255,0.25); font-size: 10px; line-height: 1;">•</span>
-                      <div style="display: flex; align-items: center; gap: 4px; line-height: 1;">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        <span style="color: #a1a1aa; font-size: 11px; font-weight: 500; letter-spacing: -0.01em;">Copied</span>
-                      </div>
-                    `
-
-                    document.body.appendChild(toast)
-
-                    setTimeout(() => {
-                      toast.style.transition = "opacity 0.2s ease, transform 0.2s ease"
-                      toast.style.opacity = "0"
-                      toast.style.transform = "translateY(6px)"
-                      setTimeout(() => toast.remove(), 200)
-                    }, 2800)
-                  },
-                  args: [hex, rgb, colorName]
-                }).catch(() => {})
+                await chrome.scripting
+                  .executeScript({
+                    target: { tabId: tab.id },
+                    func: injectColorToast,
+                    args: [hex, rgb, colorName]
+                  })
+                  .catch(() => {})
               }
               window.close()
             }
@@ -199,13 +92,15 @@ function IndexPopup() {
           else if (extensionId === "color-picker") msgType = "START_COLOR_PICKER"
 
           await chrome.tabs.sendMessage(tab.id, { type: msgType }).catch(async () => {
-            await chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              func: (type: string) => {
-                window.postMessage({ type }, "*")
-              },
-              args: [msgType]
-            }).catch(() => {})
+            await chrome.scripting
+              .executeScript({
+                target: { tabId: tab.id },
+                func: (type: string) => {
+                  window.postMessage({ type }, "*")
+                },
+                args: [msgType]
+              })
+              .catch(() => {})
           })
         }
         window.close()
@@ -224,7 +119,11 @@ function IndexPopup() {
   }
 
   return (
-    <div className={`hub-extension-root ${resolvedTheme === "dark" ? "dark" : ""} w-[360px] min-h-[480px] h-[520px] flex flex-col bg-white dark:bg-[#09090b] text-neutral-900 dark:text-neutral-100 font-sans select-none relative overflow-hidden p-4`}>
+    <div
+      className={`hub-extension-root ${
+        resolvedTheme === "dark" ? "dark" : ""
+      } w-[360px] min-h-[480px] h-[520px] flex flex-col bg-white dark:bg-[#09090b] text-neutral-900 dark:text-neutral-100 font-sans select-none relative overflow-hidden p-4`}
+    >
       {/* ── MINIMAL HEADER ── */}
       <header className="flex items-center justify-between flex-shrink-0 mb-3">
         <div className="flex items-center gap-2">
@@ -317,4 +216,3 @@ function IndexPopup() {
 }
 
 export default IndexPopup
-

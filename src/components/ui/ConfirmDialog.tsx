@@ -2,7 +2,7 @@ import React from "react"
 import Modal from "./Modal"
 import Button from "./Button"
 
-interface ConfirmDialogProps {
+export interface ConfirmDialogProps {
   isOpen: boolean
   title: string
   description: string
