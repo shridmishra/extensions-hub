@@ -19,12 +19,12 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center p-6 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/20 select-none",
+        "flex flex-col items-center justify-center text-center p-6 rounded-2xl bg-neutral-100/70 dark:bg-neutral-850/50 shadow-2xs select-none",
         className
       )}
     >
       {icon && (
-        <div className="w-10 h-10 rounded-xl bg-neutral-900 dark:bg-neutral-850 border border-neutral-800 dark:border-neutral-750 flex items-center justify-center text-white mb-3 shadow-xs">
+        <div className="w-10 h-10 rounded-xl bg-neutral-900 dark:bg-neutral-800 flex items-center justify-center text-white mb-3 shadow-xs">
           {icon}
         </div>
       )}
@@ -32,7 +32,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         {title}
       </h4>
       {description && (
-        <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mt-1 max-w-[220px] leading-normal">
+        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mt-1 max-w-[220px] leading-normal">
           {description}
         </p>
       )}

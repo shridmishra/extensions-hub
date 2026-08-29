@@ -53,6 +53,7 @@ export const INTERACTIVE_TOOLS: Record<string, string> = {
   "css-picker": "css_picker_active",
   "figma-picker": "figma_picker_active",
   "page-ruler": "page_ruler_active",
+  "link-grabber": "link_grabber_active",
   "css-inspector": "css_inspector_active",
   "element-remover": "element_remover_active"
 }
@@ -154,6 +155,36 @@ export const ExtensionStorage = {
     const updated = { ...current, ...settings }
     await storage.set("hub_dark_mode_settings", updated)
     return updated
+  },
+
+  async getEnabledSites(): Promise<string[]> {
+    const settings = await this.getDarkModeSettings()
+    return Object.entries(settings.siteOverrides || {})
+      .filter(([_, isEnabled]) => Boolean(isEnabled))
+      .map(([hostname]) => hostname)
+      .sort((a, b) => a.localeCompare(b))
+  },
+
+  async isSiteDarkModeEnabled(hostname: string): Promise<boolean> {
+    if (!hostname) return false
+    const settings = await this.getDarkModeSettings()
+    return Boolean(settings.siteOverrides?.[hostname])
+  },
+
+  async setSiteDarkMode(hostname: string, enabled: boolean): Promise<DarkModeSettings> {
+    if (!hostname) return this.getDarkModeSettings()
+    const settings = await this.getDarkModeSettings()
+    const updatedOverrides = { ...(settings.siteOverrides || {}) }
+    if (enabled) {
+      updatedOverrides[hostname] = true
+    } else {
+      delete updatedOverrides[hostname]
+    }
+    return this.setDarkModeSettings({ siteOverrides: updatedOverrides })
+  },
+
+  async removeEnabledSite(hostname: string): Promise<DarkModeSettings> {
+    return this.setSiteDarkMode(hostname, false)
   },
 
   // Color Picker History

@@ -38,7 +38,7 @@ export const ColorPaletteView: React.FC<ColorPaletteViewProps> = ({ onPickColor 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
           Saved Palette ({colors.length})
         </span>
         <div className="flex items-center gap-1">
@@ -73,18 +73,18 @@ export const ColorPaletteView: React.FC<ColorPaletteViewProps> = ({ onPickColor 
               <div
                 key={c.hex + c.timestamp}
                 onClick={() => handleCopy(c.hex)}
-                className="group flex items-center justify-between p-2 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#0c0c0e] hover:border-neutral-400 dark:hover:border-neutral-600 transition-all cursor-pointer shadow-2xs"
+                className="group flex items-center justify-between p-2 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 hover:bg-neutral-200/60 dark:hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <div
-                    className="w-5 h-5 rounded-md border border-neutral-300 dark:border-neutral-700 shadow-2xs shrink-0"
+                    className="w-5 h-5 rounded-md shadow-xs shrink-0"
                     style={{ backgroundColor: c.hex }}
                   />
                   <div className="min-w-0 flex flex-col">
                     <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate leading-none">
                       {c.name || getColorName(c.hex)}
                     </span>
-                    <span className="font-mono text-[10.5px] font-medium text-neutral-500 dark:text-neutral-400 truncate mt-1 leading-none">
+                    <span className="font-mono text-[10px] font-medium text-neutral-500 dark:text-neutral-400 truncate mt-1 leading-none">
                       {c.hex}
                     </span>
                   </div>

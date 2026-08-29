@@ -19,7 +19,8 @@ import {
   Box,
   Music,
   Headphones,
-  Disc
+  Disc,
+  Image as ImageIcon
 } from "lucide-react"
 import {
   FigmaIcon,
@@ -69,6 +70,10 @@ export const ExtensionIcon: React.FC<ExtensionIconProps> = ({
       return <Ruler size={size} className={className} />
     case "Link":
       return <Link size={size} className={className} />
+    case "Image":
+    case "ImageIcon":
+    case "Media":
+      return <ImageIcon size={size} className={className} />
     case "LayoutGrid":
       return <LayoutGrid size={size} className={className} />
     case "Palette":

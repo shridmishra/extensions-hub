@@ -2,6 +2,7 @@ import React from "react"
 import Modal from "../ui/Modal"
 import Input from "../ui/Input"
 import Button from "../ui/Button"
+import IconButton from "../ui/IconButton"
 import EmptyState from "../ui/EmptyState"
 import { useHubStore } from "../../store/hub-store"
 import { Search, X, Plus, Check, Play } from "lucide-react"
@@ -39,7 +40,7 @@ export const ExtensionCatalogModal: React.FC<ExtensionCatalogModalProps> = ({
       onClose={onClose}
       title="All Extensions"
       width="max-w-[340px]"
-      contentClassName="p-3.5 flex flex-col gap-3 max-h-[460px]"
+      contentClassName="p-3.5 flex flex-col gap-3 min-h-0 overflow-y-auto hub-scrollbar"
     >
       {/* Search Input */}
       <div className="flex-shrink-0">
@@ -50,39 +51,44 @@ export const ExtensionCatalogModal: React.FC<ExtensionCatalogModalProps> = ({
           icon={<Search size={13} />}
           actionRight={
             searchQuery ? (
-              <button
+              <IconButton
+                size="sm"
+                variant="ghost"
                 onClick={() => setSearchQuery("")}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer"
+                className="h-5 w-5 p-0 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                aria-label="Clear search"
               >
-                <X size={13} />
-              </button>
+                <X size={12} />
+              </IconButton>
             ) : null
           }
         />
       </div>
 
       {/* Categories Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto hub-scrollbar pb-0.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 flex-shrink-0">
         {CATEGORIES.map((cat) => {
           const isActive = catalogCategory === cat
           return (
-            <button
+            <Button
               key={cat}
+              size="sm"
+              variant={isActive ? "primary" : "secondary"}
               onClick={() => setCatalogCategory(cat)}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap transition-all cursor-pointer select-none ${
+              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap transition-all h-6 ${
                 isActive
-                  ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-2xs"
-                  : "bg-neutral-100 dark:bg-neutral-850 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                  ? "shadow-2xs"
+                  : "text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-850 border-none hover:bg-neutral-200 dark:hover:bg-neutral-800"
               }`}
             >
               {cat}
-            </button>
+            </Button>
           )
         })}
       </div>
 
       {/* Minimal Extensions List */}
-      <div className="flex flex-col gap-2 overflow-y-auto hub-scrollbar flex-1 pr-0.5 pt-1">
+      <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar flex-1 pr-0.5 pt-1">
         {extensions.length === 0 ? (
           <EmptyState
             icon={<HubLogo size={18} className="fill-current text-neutral-400 dark:text-neutral-500" />}
@@ -107,10 +113,14 @@ export const ExtensionCatalogModal: React.FC<ExtensionCatalogModalProps> = ({
             return (
               <div
                 key={ext.id}
-                className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#0c0c0e] hover:border-neutral-300 dark:hover:border-neutral-700 transition-all select-none"
+                onClick={() => {
+                  onClose()
+                  onLaunchExtension(ext.id)
+                }}
+                className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 hover:bg-neutral-200/60 dark:hover:bg-neutral-800 shadow-2xs hover:shadow-xs transition-all select-none cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                  <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-850 border border-neutral-200/60 dark:border-neutral-800 flex items-center justify-center text-neutral-800 dark:text-neutral-200 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-neutral-750 flex items-center justify-center text-neutral-800 dark:text-neutral-200 shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                     <ExtensionIcon name={ext.icon} size={16} />
                   </div>
                   <div className="min-w-0">
@@ -123,7 +133,7 @@ export const ExtensionCatalogModal: React.FC<ExtensionCatalogModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="sm"
                     variant={isPinned ? "secondary" : "primary"}

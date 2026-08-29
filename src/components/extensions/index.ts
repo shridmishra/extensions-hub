@@ -4,3 +4,5 @@ export { FigmaIslandToolbar, type ToolbarMode, type CapturedItem } from "./Figma
 export { default as FigmaPickerModal } from "./FigmaPickerModal"
 export { default as FontFinderModal, type FontMetrics } from "./FontFinderModal"
 export { default as YtMusicSettingsModal } from "./YtMusicSettingsModal"
+export { default as PageRulerModal, type RulerMetrics } from "./PageRulerModal"
+export { default as MediaGrabberModal, type ExtractedMediaItem } from "./MediaGrabberModal"

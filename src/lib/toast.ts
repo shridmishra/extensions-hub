@@ -19,9 +19,8 @@ export function injectColorToast(pickedHex: string, pickedRgb: string, name: str
     padding: 8px 14px 8px 10px !important;
     background: #09090b !important;
     color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 9999px !important;
-    box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.45), 0 4px 12px -2px rgba(0, 0, 0, 0.25) !important;
     font-family: 'Geist Mono', -apple-system, system-ui, monospace !important;
     animation: hubToastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     user-select: none !important;
@@ -38,7 +37,7 @@ export function injectColorToast(pickedHex: string, pickedRgb: string, name: str
     </style>
     <div style="width: 18px; height: 18px; border-radius: 9999px; background-color: ${pickedHex}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25), 0 0 0 1px rgba(0,0,0,0.5); flex-shrink: 0;"></div>
     <div style="display: flex; align-items: center; gap: 6px; line-height: 1;">
-      <span style="font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: -0.01em; color: #fafafa; font-feature-settings: 'tnum' 1;">${pickedHex}</span>
+      <span style="font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 12px; letter-spacing: -0.01em; color: #fafafa; font-feature-settings: 'tnum' 1;">${pickedHex}</span>
       <span style="color: rgba(255,255,255,0.3); font-size: 10px;">•</span>
       <span style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em;">${name}</span>
     </div>
@@ -47,7 +46,7 @@ export function injectColorToast(pickedHex: string, pickedRgb: string, name: str
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
-      <span style="color: #a1a1aa; font-size: 11px; font-weight: 500; letter-spacing: -0.01em;">Copied</span>
+      <span style="color: #a1a1aa; font-size: 10px; font-weight: 500; letter-spacing: -0.01em;">Copied</span>
     </div>
   `
 

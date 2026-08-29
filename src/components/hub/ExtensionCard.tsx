@@ -40,7 +40,7 @@ export const ExtensionCard: React.FC<ExtensionCardProps> = ({
   return (
     <div
       className={cn(
-        "group relative ds-card p-3.5 flex flex-col justify-between transition-all duration-150 select-none border border-neutral-200/80 dark:border-neutral-800/90 hover:border-neutral-400/80 dark:hover:border-neutral-750",
+        "group relative ds-card p-3.5 flex flex-col justify-between transition-all duration-150 select-none",
         variant === "compact" ? "gap-2.5" : "gap-3"
       )}
     >
@@ -48,13 +48,13 @@ export const ExtensionCard: React.FC<ExtensionCardProps> = ({
       <div className="flex items-start justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
           {/* Icon Badge */}
-          <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-850 border border-neutral-200/70 dark:border-neutral-750 flex items-center justify-center text-neutral-900 dark:text-neutral-100 shrink-0 shadow-2xs">
+          <div className="w-8 h-8 rounded-lg bg-white dark:bg-neutral-750 flex items-center justify-center text-neutral-900 dark:text-neutral-100 shrink-0 shadow-2xs">
             <ExtensionIcon name={extension.icon} size={16} />
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[9px] font-bold text-neutral-400 dark:text-neutral-500">
+              <span className="font-mono text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
                 #{String(extension.number).padStart(2, "0")}
               </span>
               <h3 className="text-xs font-black text-neutral-900 dark:text-neutral-50 truncate tracking-tight">
@@ -62,13 +62,10 @@ export const ExtensionCard: React.FC<ExtensionCardProps> = ({
               </h3>
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <Badge variant="muted" className="text-[9px] py-0 px-1 font-semibold">
+              <Badge variant="muted">
                 {extension.category}
               </Badge>
-              <Badge
-                variant={isInteractive ? "interactive" : "background"}
-                className="text-[9px] py-0 px-1"
-              >
+              <Badge variant={isInteractive ? "interactive" : "background"}>
                 {isInteractive ? "On-Demand" : "Always-On"}
               </Badge>
             </div>
@@ -96,19 +93,21 @@ export const ExtensionCard: React.FC<ExtensionCardProps> = ({
 
       {/* Description */}
       {variant === "detailed" && (
-        <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
+        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
           {extension.description}
         </p>
       )}
 
       {/* Bottom Action Footer */}
-      <div className="flex items-center justify-between pt-1 border-t border-neutral-100 dark:border-neutral-850/60 mt-0.5">
+      <div className="flex items-center justify-between pt-2 mt-1">
         {/* Social / Rating metrics */}
-        <div className="flex items-center gap-2.5 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-          <button
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+          <Button
+            size="sm"
+            variant="ghost"
             onClick={onToggleStar}
             className={cn(
-              "flex items-center gap-1 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors cursor-pointer",
+              "h-6 px-1.5 py-0 text-[10px] flex items-center gap-1 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors",
               isStarred && "text-neutral-900 dark:text-neutral-100 font-bold"
             )}
             title="Star this extension"
@@ -121,12 +120,14 @@ export const ExtensionCard: React.FC<ExtensionCardProps> = ({
               )}
             />
             <span>{extension.stars + (isStarred ? 1 : 0)}</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
+            size="sm"
+            variant="ghost"
             onClick={onToggleLike}
             className={cn(
-              "flex items-center gap-1 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors cursor-pointer",
+              "h-6 px-1.5 py-0 text-[10px] flex items-center gap-1 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors",
               isLiked && "text-neutral-900 dark:text-neutral-100 font-bold"
             )}
             title="Like this extension"
@@ -139,7 +140,7 @@ export const ExtensionCard: React.FC<ExtensionCardProps> = ({
               )}
             />
             <span>{extension.likes + (isLiked ? 1 : 0)}</span>
-          </button>
+          </Button>
         </div>
 
         {/* Action Trigger / Switch */}
@@ -149,7 +150,7 @@ export const ExtensionCard: React.FC<ExtensionCardProps> = ({
               size="sm"
               variant="primary"
               onClick={onLaunch}
-              className="text-[11px] h-7 px-3 font-bold"
+              className="text-xs h-7 px-3 font-bold"
             >
               <Play size={10} className="fill-current" />
               <span>Launch</span>

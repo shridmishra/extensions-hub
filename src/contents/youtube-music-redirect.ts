@@ -378,6 +378,18 @@ function init() {
     }
   })
 
+  chrome.runtime?.onMessage?.addListener((msg, sender, sendResponse) => {
+    if (msg?.type === "PING" || msg?.type === "PING_CONTENT_SCRIPT") {
+      sendResponse({ status: "ready", tool: "yt-music-redirect" })
+      return true
+    }
+    if (msg?.type === "UPDATE_YT_MUSIC_SETTINGS" || msg?.type === "TOGGLE_YT_MUSIC") {
+      checkAndInject()
+      sendResponse({ success: true })
+      return true
+    }
+  })
+
   // Hook YouTube SPA navigation events
   window.addEventListener("yt-navigate-finish", () => {
     setTimeout(checkAndInject, 100)

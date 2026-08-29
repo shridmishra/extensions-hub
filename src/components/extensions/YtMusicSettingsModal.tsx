@@ -3,7 +3,6 @@ import Modal from "../ui/Modal"
 import Switch from "../ui/Switch"
 import Input from "../ui/Input"
 import Button from "../ui/Button"
-import Badge from "../ui/Badge"
 import Tooltip from "../ui/Tooltip"
 import {
   ExtensionStorage,
@@ -124,26 +123,14 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
           <span>YouTube Music Switcher</span>
         </div>
       }
-      description="Timeline switch button & instant URL redirector"
       width="max-w-[350px]"
-      contentClassName="p-3.5 flex flex-col gap-3.5 max-h-[480px]"
+      contentClassName="p-3.5 flex flex-col gap-3 min-h-0 overflow-y-auto hub-scrollbar"
     >
       {/* Main Switch: Enable on YouTube */}
-      <div className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
-              Player Timeline Button
-            </span>
-            <Badge variant={settings.enabled ? "success" : "neutral"}>
-              {settings.enabled ? "Active" : "Disabled"}
-            </Badge>
-
-          </div>
-          <span className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Inject switch button into YouTube video controls
-          </span>
-        </div>
+      <div className="flex items-center justify-between p-2.5 rounded-2xl bg-neutral-100/80 dark:bg-neutral-850/80 shadow-2xs">
+        <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+          Player Timeline Button
+        </span>
         <Switch
           checked={settings.enabled}
           onChange={(checked) => handleUpdateSetting("enabled", checked)}
@@ -152,21 +139,16 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
       </div>
 
       {/* Configuration Options */}
-      <div className="flex flex-col gap-2 rounded-xl border border-neutral-200/80 dark:border-neutral-800 p-2.5 bg-white dark:bg-[#0c0c0e]">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 px-0.5">
+      <div className="flex flex-col gap-2 rounded-2xl p-2.5 bg-neutral-50 dark:bg-neutral-900 shadow-2xs">
+        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 px-0.5">
           Behavior & Sync
         </span>
 
         {/* Option 1: Open in Same Tab vs New Tab */}
         <div className="flex items-center justify-between py-1 px-0.5">
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-              Open in New Tab
-            </span>
-            <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
-              {settings.openInNewTab ? "Opens in background tab" : "Redirects current tab directly"}
-            </span>
-          </div>
+          <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+            Open in New Tab
+          </span>
           <Switch
             size="sm"
             checked={settings.openInNewTab}
@@ -179,16 +161,11 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
 
         {/* Option 2: Preserve Playback Timestamp */}
         <div className="flex items-center justify-between py-1 px-0.5">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <Clock size={13} className="text-neutral-400" />
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                Preserve Timestamp
-              </span>
-              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
-                Sync current playback second (e.g. &t=45s)
-              </span>
-            </div>
+            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+              Preserve Timestamp
+            </span>
           </div>
           <Switch
             size="sm"
@@ -202,16 +179,11 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
 
         {/* Option 3: Preserve Playlist Context */}
         <div className="flex items-center justify-between py-1 px-0.5">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <ListMusic size={13} className="text-neutral-400" />
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                Preserve Playlist
-              </span>
-              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
-                Carry over current playlist queue if present
-              </span>
-            </div>
+            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+              Preserve Playlist
+            </span>
           </div>
           <Switch
             size="sm"
@@ -225,16 +197,11 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
 
         {/* Option 4: Auto-pause Video */}
         <div className="flex items-center justify-between py-1 px-0.5">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <Play size={13} className="text-neutral-400" />
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                Auto-Pause YouTube
-              </span>
-              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
-                Pause current video before redirecting
-              </span>
-            </div>
+            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+              Auto-Pause YouTube
+            </span>
           </div>
           <Switch
             size="sm"
@@ -248,16 +215,11 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
 
         {/* Option 5: Prefer Song Version (Studio Audio) */}
         <div className="flex items-center justify-between py-1 px-0.5">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <Music size={13} className="text-neutral-400" />
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                Prefer Song Version
-              </span>
-              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
-                Auto-switch to studio audio & album art on YT Music
-              </span>
-            </div>
+            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+              Prefer Song Version
+            </span>
           </div>
           <Switch
             size="sm"
@@ -270,8 +232,8 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
 
 
       {/* Quick URL Converter / Launcher */}
-      <div className="flex flex-col gap-2 rounded-xl border border-neutral-200/80 dark:border-neutral-800 p-2.5 bg-neutral-50/40 dark:bg-neutral-900/20">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 px-0.5">
+      <div className="flex flex-col gap-2 rounded-2xl p-2.5 bg-neutral-100/70 dark:bg-neutral-850/70 shadow-2xs">
+        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 px-0.5">
           Quick Link Converter
         </span>
         <Input
@@ -284,8 +246,8 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
 
 
         {convertedUrl && (
-          <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-850 border border-neutral-200/80 dark:border-neutral-800">
-            <span className="text-[10px] font-mono text-neutral-600 dark:text-neutral-300 truncate">
+          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white dark:bg-neutral-800 shadow-2xs">
+            <span className="text-[10px] font-sans text-neutral-600 dark:text-neutral-300 truncate">
               {convertedUrl}
             </span>
             <div className="flex items-center gap-1 shrink-0">
@@ -312,9 +274,9 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
       </div>
 
       {/* Keyboard Shortcut Note */}
-      <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-neutral-100/60 dark:bg-neutral-900/60 text-[10px] text-neutral-500 dark:text-neutral-400">
+      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-neutral-100/60 dark:bg-neutral-850/60 text-[10px] text-neutral-500 dark:text-neutral-400">
         <span>Instant Keyboard Shortcut:</span>
-        <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 font-mono text-[9px] font-bold text-neutral-800 dark:text-neutral-200 shadow-2xs">
+        <kbd className="px-1.5 py-0.5 rounded-md bg-white dark:bg-neutral-750 font-sans text-[10px] font-bold text-neutral-800 dark:text-neutral-200 shadow-2xs">
           Shift + M
         </kbd>
       </div>

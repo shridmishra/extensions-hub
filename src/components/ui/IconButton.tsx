@@ -1,10 +1,10 @@
 import React from "react"
 import { cn } from "../../lib/utils"
-import Tooltip from "./Tooltip"
+import Tooltip, { type TooltipPosition } from "./Tooltip"
 
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "sm" | "md" | "lg"
-  tooltipPosition?: "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right"
+  tooltipPosition?: TooltipPosition
   variant?: "ghost" | "secondary" | "primary" | "danger"
 }
 
@@ -17,8 +17,8 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         className={cn(
           "inline-flex items-center justify-center rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500/20 active:scale-95 disabled:opacity-50 cursor-pointer select-none",
           
-          variant === "ghost" && "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800",
-          variant === "secondary" && "border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 shadow-xs",
+          variant === "ghost" && "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-850",
+          variant === "secondary" && "bg-neutral-100 dark:bg-neutral-850 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-xs",
           variant === "primary" && "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black hover:bg-black dark:hover:bg-white shadow-xs",
           variant === "danger" && "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30",
 

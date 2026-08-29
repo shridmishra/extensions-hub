@@ -104,10 +104,18 @@
 }
 
 /* Base Styles within Extension Container */
-html, body, .hub-extension-root {
+html, body {
   font-family: var(--font-sans);
   color: var(--text-primary);
   background-color: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.hub-extension-root {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -131,8 +139,8 @@ textarea:not(.font-preview-element, .font-preview-element *) {
 
 /* Custom Scrollbar */
 .hub-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 .hub-scrollbar::-webkit-scrollbar-track {
@@ -141,16 +149,30 @@ textarea:not(.font-preview-element, .font-preview-element *) {
 
 .hub-scrollbar::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: 9999px;
 }
 
 .hub-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
 
+/* Hidden Scrollbar (Scrolling active, scroll bar hidden) */
+.no-scrollbar::-webkit-scrollbar,
+.hub-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.no-scrollbar,
+.hub-scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 /* Design System Utilities */
 .ds-heading {
-  @apply text-[15px] font-extrabold text-neutral-900 dark:text-neutral-50 tracking-tight leading-snug;
+  @apply text-sm font-extrabold text-neutral-900 dark:text-neutral-50 tracking-tight leading-snug;
   font-family: var(--font-sans) !important;
 }
 
@@ -171,41 +193,41 @@ textarea:not(.font-preview-element, .font-preview-element *) {
 
 /* Badges */
 .ds-badge {
-  @apply inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 select-none;
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-850 text-neutral-600 dark:text-neutral-400 select-none;
 }
 
 .ds-badge-interactive {
-  @apply inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border border-neutral-300 dark:border-neutral-700 bg-neutral-900 dark:bg-neutral-100 text-neutral-50 dark:text-neutral-900 select-none;
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-900 dark:bg-neutral-100 text-neutral-50 dark:text-neutral-900 shadow-2xs select-none;
 }
 
 .ds-badge-background {
-  @apply inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 select-none;
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 select-none;
 }
 
 /* Buttons */
 .ds-btn-primary {
-  @apply bg-neutral-900 hover:bg-black text-white dark:bg-neutral-100 dark:hover:bg-white dark:text-black border border-transparent shadow-sm;
+  @apply bg-neutral-900 hover:bg-black text-white dark:bg-neutral-100 dark:hover:bg-white dark:text-black shadow-xs;
 }
 
 .ds-btn-secondary {
-  @apply border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm;
+  @apply bg-neutral-100 dark:bg-neutral-850 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-xs transition-colors;
 }
 
 .ds-btn-ghost {
-  @apply hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100;
+  @apply hover:bg-neutral-100 dark:hover:bg-neutral-850 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors;
 }
 
 .ds-btn-danger {
-  @apply bg-red-600 hover:bg-red-700 text-white shadow-sm border border-transparent;
+  @apply bg-red-600 hover:bg-red-700 text-white shadow-xs;
 }
 
 /* Card */
 .ds-card {
-  @apply bg-white dark:bg-[#0c0c0e] border border-neutral-200/80 dark:border-neutral-800/80 rounded-xl shadow-xs transition-all duration-200;
+  @apply bg-neutral-50/90 dark:bg-neutral-850/80 rounded-2xl shadow-xs transition-all duration-200;
 }
 
 .ds-card-interactive {
-  @apply hover:bg-neutral-50/80 dark:hover:bg-neutral-900/60 hover:border-neutral-300 dark:hover:border-neutral-700 hover:shadow-sm cursor-pointer;
+  @apply hover:bg-white dark:hover:bg-neutral-800 hover:shadow-sm cursor-pointer;
 }
 
 /* Theme color helper classes */

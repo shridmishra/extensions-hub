@@ -36,7 +36,8 @@ export const getStyle: PlasmoGetStyle = () => {
 
   const style = document.createElement("style")
   style.textContent = cssText + `
-    :host {
+    :host,
+    #plasmo-shadow-container {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
@@ -44,9 +45,11 @@ export const getStyle: PlasmoGetStyle = () => {
       height: 100vh !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
+      background: transparent !important;
     }
     .hub-extension-root {
       pointer-events: auto !important;
+      background: transparent !important;
       font-family: "Satoshi", system-ui, -apple-system, sans-serif !important;
     }
     .hub-extension-root * {
@@ -113,6 +116,49 @@ export default function CssPickerContentScript() {
 
     return () => {
       storage.unwatch(activeCallbacks)
+    }
+  }, [])
+
+  // Listen for direct runtime messages from popup and background
+  useEffect(() => {
+    const handleMessage = (message: any, _sender: any, sendResponse: (response?: any) => void) => {
+      if (message?.type === "PING" || message?.type === "PING_CONTENT_SCRIPT") {
+        sendResponse({ status: "ready", tool: "css-picker" })
+        return true
+      }
+
+      if (message?.type === "START_CSS_PICKER") {
+        setIsActive(true)
+        setCurrentMode("inspect-css")
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setInspectedStyles(null)
+        setCapturedDoc(null)
+        storage.set("css_picker_active", true)
+        sendResponse({ success: true })
+        return true
+      }
+
+      if (
+        message?.type === "STOP_CSS_PICKER" ||
+        message?.type === "START_FONT_FINDER" ||
+        message?.type === "START_COLOR_PICKER" ||
+        message?.type === "START_ELEMENT_SELECTION" ||
+        message?.type === "START_FIGMA_PICKER"
+      ) {
+        setIsActive(false)
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setInspectedStyles(null)
+        setCapturedDoc(null)
+        sendResponse({ success: true })
+        return true
+      }
+    }
+
+    chrome.runtime?.onMessage?.addListener(handleMessage)
+    return () => {
+      chrome.runtime?.onMessage?.removeListener(handleMessage)
     }
   }, [])
 
@@ -342,13 +388,13 @@ export default function CssPickerContentScript() {
             }}
             className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
               isFigmaMode ? "bg-purple-600" : "bg-blue-600"
-            } text-white shadow-md font-mono text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]`}
+            } text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]`}
           >
             <span>&lt;{hoverTag}&gt;{hoverClass}</span>
             <span className="opacity-40">|</span>
-            <span>{hoverDimensions}</span>
+            <span className="font-mono">{hoverDimensions}</span>
             <span className="opacity-40">|</span>
-            <span className="text-[9px] font-black uppercase">
+            <span className="text-[10px] font-extrabold">
               {isFigmaMode ? "Click to Copy Figma" : "Click to Copy CSS"}
             </span>
           </div>
@@ -360,7 +406,7 @@ export default function CssPickerContentScript() {
         <div style={{ pointerEvents: "auto" }}>
           <CssInspectorModal
             styles={inspectedStyles}
-            onClose={() => setInspectedStyles(null)}
+            onClose={handleClose}
             isDarkMode={isDarkMode}
           />
         </div>
@@ -371,7 +417,7 @@ export default function CssPickerContentScript() {
         <div style={{ pointerEvents: "auto" }}>
           <FigmaPickerModal
             document={capturedDoc}
-            onClose={() => setCapturedDoc(null)}
+            onClose={handleClose}
             isDarkMode={isDarkMode}
           />
         </div>

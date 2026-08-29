@@ -6,8 +6,10 @@ import { Storage } from "@plasmohq/storage"
 import { ExtensionStorage } from "../lib/storage"
 import { copyToClipboard } from "../lib/utils"
 import { getColorName } from "../lib/color-names"
-import { Check, X, Pipette } from "lucide-react"
+import { Check, X, Pipette, MousePointer } from "lucide-react"
 import Button from "../components/ui/Button"
+import IconButton from "../components/ui/IconButton"
+import ActiveToolBanner from "../components/ui/ActiveToolBanner"
 
 export const config: PlasmoCSConfig = {
   matches: ["http://*/*", "https://*/*"],
@@ -34,17 +36,20 @@ export const getStyle: PlasmoGetStyle = () => {
 
   const style = document.createElement("style")
   style.textContent = cssText + `
-    :host {
+    :host,
+    #plasmo-shadow-container {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
-      width: 0 !important;
-      height: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
+      background: transparent !important;
     }
     .hub-extension-root {
       pointer-events: auto !important;
+      background: transparent !important;
       font-family: "Satoshi", system-ui, -apple-system, sans-serif !important;
     }
     .hub-extension-root * {
@@ -141,6 +146,41 @@ export default function ColorPickerContentScript() {
 
     return () => {
       storage.unwatch(activeCallbacks)
+    }
+  }, [])
+
+  // Listen for direct runtime messages from popup and background
+  useEffect(() => {
+    const handleMessage = (message: any, _sender: any, sendResponse: (response?: any) => void) => {
+      if (message?.type === "PING" || message?.type === "PING_CONTENT_SCRIPT") {
+        sendResponse({ status: "ready", tool: "color-picker" })
+        return true
+      }
+
+      if (message?.type === "START_COLOR_PICKER") {
+        setIsActive(true)
+        setToastColor(null)
+        storage.set("color_picker_active", true)
+        sendResponse({ success: true })
+        return true
+      }
+
+      if (
+        message?.type === "STOP_COLOR_PICKER" ||
+        message?.type === "START_FONT_FINDER" ||
+        message?.type === "START_CSS_PICKER" ||
+        message?.type === "START_ELEMENT_SELECTION" ||
+        message?.type === "START_FIGMA_PICKER"
+      ) {
+        setIsActive(false)
+        sendResponse({ success: true })
+        return true
+      }
+    }
+
+    chrome.runtime?.onMessage?.addListener(handleMessage)
+    return () => {
+      chrome.runtime?.onMessage?.removeListener(handleMessage)
     }
   }, [])
 
@@ -261,26 +301,14 @@ export default function ColorPickerContentScript() {
 
       {/* 2. Top Floating Active Island Pill */}
       {isActive && (
-        <div
-          style={{
-            position: "fixed",
-            top: "16px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 2147483647,
-            pointerEvents: "auto"
-          }}
-          className="animate-hub-fade-in font-sans select-none"
-        >
-          <Button
-            variant="secondary"
-            onClick={handleClose}
-            className="flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121215] text-neutral-900 dark:text-neutral-50 shadow-2xl text-xs font-black hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 transition-all select-none cursor-pointer h-auto"
-          >
-            <Pipette size={13} className="text-neutral-900 dark:text-neutral-100 animate-pulse" />
-            <span>Color Picker Active (Click element to pick / Esc to exit)</span>
-          </Button>
-        </div>
+        <ActiveToolBanner
+          title="Color Picker"
+          icon={<Pipette size={13} className="text-neutral-900 dark:text-neutral-100" />}
+          instruction="Click element to pick"
+          instructionIcon={<MousePointer size={12} />}
+          onClose={handleClose}
+          isDarkMode={isDarkMode}
+        />
       )}
 
       {/* 3. Floating Toast Notification when Color is Picked */}
@@ -289,9 +317,9 @@ export default function ColorPickerContentScript() {
           style={{ pointerEvents: "auto" }}
           className="fixed bottom-6 right-6 z-[2147483647] animate-scale-in font-sans"
         >
-          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-full border border-neutral-800 bg-[#09090b] text-neutral-100 shadow-2xl">
+          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-neutral-900 text-neutral-100 shadow-2xl">
             <div
-              className="w-4.5 h-4.5 rounded-full border border-neutral-700 shadow-xs shrink-0"
+              className="w-4.5 h-4.5 rounded-full shadow-xs shrink-0"
               style={{ backgroundColor: toastColor }}
             />
             <div className="flex items-center gap-1.5 leading-none">
@@ -308,12 +336,15 @@ export default function ColorPickerContentScript() {
               <Check size={11} className="text-emerald-500 stroke-[3]" />
               <span className="text-neutral-400 text-xs font-medium tracking-tight">Copied</span>
             </div>
-            <button
+            <IconButton
+              size="sm"
+              variant="ghost"
               onClick={() => setToastColor(null)}
-              className="text-neutral-500 hover:text-neutral-200 ml-1 cursor-pointer transition-colors"
+              aria-label="Close"
+              className="text-neutral-400 hover:text-neutral-200 h-5 w-5 rounded-full p-0.5 ml-1"
             >
               <X size={12} className="stroke-[2.2]" />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}

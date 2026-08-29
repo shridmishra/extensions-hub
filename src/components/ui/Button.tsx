@@ -1,15 +1,18 @@
 import React from "react"
 import { cn } from "../../lib/utils"
+import Tooltip, { type TooltipPosition } from "./Tooltip"
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "danger"
   size?: "sm" | "md" | "lg"
   isLoading?: boolean
+  tooltip?: React.ReactNode
+  tooltipPosition?: TooltipPosition
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
-    return (
+  ({ className, variant = "primary", size = "md", isLoading, tooltip, tooltipPosition = "bottom", children, disabled, ...props }, ref) => {
+    const buttonElement = (
       <button
         ref={ref}
         disabled={disabled || isLoading}
@@ -23,7 +26,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           variant === "danger" && "ds-btn-danger",
 
           // Sizes
-          size === "sm" && "px-2.5 py-1 h-7 text-[11px] gap-1",
+          size === "sm" && "px-2.5 py-1 h-7 text-xs gap-1",
           size === "md" && "px-3.5 py-1.5 h-8 text-xs gap-1.5",
           size === "lg" && "px-4 py-2 h-9 text-xs gap-2",
 
@@ -40,6 +43,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </button>
     )
+
+    if (tooltip) {
+      return (
+        <Tooltip content={tooltip} position={tooltipPosition}>
+          {buttonElement}
+        </Tooltip>
+      )
+    }
+
+    return buttonElement
   }
 )
 

@@ -1,5 +1,5 @@
 import { Storage } from "@plasmohq/storage"
-import { activateInteractiveTool } from "../lib/storage"
+import { launchExtension, injectContentScriptsIntoAllTabs } from "../lib/tool-launcher"
 
 const storage = new Storage({ area: "local" })
 
@@ -15,14 +15,17 @@ chrome.runtime.onInstalled.addListener(async () => {
       "figma-picker"
     ])
   }
+
+  // Inject content scripts into all pre-existing open tabs
+  await injectContentScriptsIntoAllTabs()
 })
 
 // Listen to messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "EXECUTE_TOOL") {
-    const { toolId, tabId } = message.payload
-    handleToolExecution(toolId, tabId)
-      .then((res) => sendResponse({ success: true, result: res }))
+    const { toolId, tabId } = message.payload || {}
+    launchExtension(toolId, { tabId })
+      .then((res) => sendResponse(res))
       .catch((err) => sendResponse({ success: false, error: err?.message }))
     return true
   }
@@ -40,39 +43,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 })
-
-async function handleToolExecution(toolId: string, targetTabId?: number) {
-  let tabId = targetTabId
-  if (!tabId) {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    tabId = tab?.id
-  }
-
-  if (!tabId) return
-
-  if (toolId === "font-finder") {
-    await activateInteractiveTool("font-finder")
-    await chrome.tabs.sendMessage(tabId, { type: "START_FONT_FINDER" }).catch(() => {})
-  } else if (toolId === "color-picker") {
-    await activateInteractiveTool("color-picker")
-    await chrome.tabs.sendMessage(tabId, { type: "START_COLOR_PICKER" }).catch(() => {})
-  } else if (toolId === "css-picker") {
-    await activateInteractiveTool("css-picker")
-    await chrome.tabs.sendMessage(tabId, { type: "START_CSS_PICKER" }).catch(() => {})
-  } else if (toolId === "figma-picker") {
-    await activateInteractiveTool("figma-picker")
-    await chrome.tabs.sendMessage(tabId, { type: "START_ELEMENT_SELECTION" }).catch(() => {})
-  } else if (toolId === "force-dark-mode") {
-    const current = (await storage.get<Record<string, boolean>>("hub_background_enabled")) || {}
-    const nextState = !current["force-dark-mode"]
-    current["force-dark-mode"] = nextState
-    await storage.set("hub_background_enabled", current)
-    await chrome.tabs.sendMessage(tabId, { type: "TOGGLE_DARK_MODE", enabled: nextState }).catch(() => {})
-  } else if (toolId === "yt-music-redirect") {
-    const current = (await storage.get<Record<string, boolean>>("hub_background_enabled")) || {}
-    const nextState = current["yt-music-redirect"] !== undefined ? !current["yt-music-redirect"] : false
-    current["yt-music-redirect"] = nextState
-    await storage.set("hub_background_enabled", current)
-  }
-}
 

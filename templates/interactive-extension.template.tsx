@@ -118,7 +118,7 @@ export default function InteractiveExtensionContentScript() {
       {/* On-Page Inspector / Tool Overlay */}
       <div className="fixed top-4 right-4 z-[2147483647] p-4 rounded-xl bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-800 shadow-2xl flex flex-col gap-3 min-w-[280px]">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold font-mono tracking-tight">
+          <span className="text-xs font-bold font-sans tracking-tight">
             __EXTENSION_NAME__
           </span>
           <IconButton

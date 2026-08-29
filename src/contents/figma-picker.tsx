@@ -36,7 +36,8 @@ export const getStyle: PlasmoGetStyle = () => {
 
   const style = document.createElement("style")
   style.textContent = cssText + `
-    :host {
+    :host,
+    #plasmo-shadow-container {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
@@ -44,9 +45,11 @@ export const getStyle: PlasmoGetStyle = () => {
       height: 100vh !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
+      background: transparent !important;
     }
     .hub-extension-root {
       pointer-events: auto !important;
+      background: transparent !important;
       font-family: "Satoshi", system-ui, -apple-system, sans-serif !important;
     }
     .hub-extension-root * {
@@ -126,32 +129,56 @@ export default function FigmaPickerContentScript() {
     }
   }, [])
 
-  // Listen for message-based triggers from Popup
+  // Listen for message-based triggers from Popup and background
   useEffect(() => {
     const handleMessage = (message: any, _sender: any, sendResponse: (response?: any) => void) => {
-      if (message.type === "START_ELEMENT_SELECTION") {
+      if (message?.type === "PING" || message?.type === "PING_CONTENT_SCRIPT") {
+        sendResponse({ status: "ready", tool: "figma-picker" })
+        return true
+      }
+
+      if (message?.type === "START_ELEMENT_SELECTION" || message?.type === "START_FIGMA_PICKER") {
         setIsActive(true)
         setCurrentMode("figma-element")
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setCapturedDoc(null)
+        setInspectedCss(null)
         storage.set("figma_picker_active", true)
         sendResponse({ success: true })
-      } else if (message.type === "START_CSS_PICKER") {
-        setIsActive(true)
-        setCurrentMode("inspect-css")
-        storage.set("figma_picker_active", true)
+        return true
+      }
+
+      if (message?.type === "CAPTURE_FULL_PAGE") {
+        handleCaptureFullPage()
+          .then((doc) => {
+            sendResponse({ success: true, data: doc })
+          })
+          .catch((err) => {
+            sendResponse({ success: false, error: err?.message })
+          })
+        return true
+      }
+
+      if (
+        message?.type === "STOP_FIGMA_PICKER" ||
+        message?.type === "START_FONT_FINDER" ||
+        message?.type === "START_COLOR_PICKER" ||
+        message?.type === "START_CSS_PICKER"
+      ) {
+        setIsActive(false)
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setCapturedDoc(null)
+        setInspectedCss(null)
         sendResponse({ success: true })
-      } else if (message.type === "CAPTURE_FULL_PAGE") {
-        handleCaptureFullPage().then((doc) => {
-          sendResponse({ success: true, data: doc })
-        }).catch((err) => {
-          sendResponse({ success: false, error: err?.message })
-        })
         return true
       }
     }
 
-    chrome.runtime.onMessage.addListener(handleMessage)
+    chrome.runtime?.onMessage?.addListener(handleMessage)
     return () => {
-      chrome.runtime.onMessage.removeListener(handleMessage)
+      chrome.runtime?.onMessage?.removeListener(handleMessage)
     }
   }, [])
 
@@ -363,13 +390,13 @@ export default function FigmaPickerContentScript() {
             }}
             className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
               isFigmaMode ? "bg-purple-600" : "bg-blue-600"
-            } text-white shadow-md font-mono text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]`}
+            } text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]`}
           >
             <span>&lt;{hoverTag}&gt;{hoverClass}</span>
             <span className="opacity-40">|</span>
-            <span>{hoverDimensions}</span>
+            <span className="font-mono">{hoverDimensions}</span>
             <span className="opacity-40">|</span>
-            <span className="text-[9px] font-black uppercase">
+            <span className="text-[10px] font-extrabold">
               {isFigmaMode ? "Click to Copy Figma" : "Click to Copy CSS"}
             </span>
           </div>
@@ -381,7 +408,7 @@ export default function FigmaPickerContentScript() {
         <div style={{ pointerEvents: "auto" }}>
           <FigmaPickerModal
             document={capturedDoc}
-            onClose={() => setCapturedDoc(null)}
+            onClose={handleClose}
             isDarkMode={isDarkMode}
           />
         </div>
@@ -392,7 +419,7 @@ export default function FigmaPickerContentScript() {
         <div style={{ pointerEvents: "auto" }}>
           <CssInspectorModal
             styles={inspectedCss}
-            onClose={() => setInspectedCss(null)}
+            onClose={handleClose}
             isDarkMode={isDarkMode}
           />
         </div>

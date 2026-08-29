@@ -5,7 +5,8 @@ import React, { useEffect, useState, useRef } from "react"
 import { Storage } from "@plasmohq/storage"
 import FontFinderModal, { type FontMetrics } from "../components/extensions/FontFinderModal"
 import { ExtensionStorage } from "../lib/storage"
-import Button from "../components/ui/Button"
+import { Type, MousePointer } from "lucide-react"
+import ActiveToolBanner from "../components/ui/ActiveToolBanner"
 
 export const config: PlasmoCSConfig = {
   matches: ["http://*/*", "https://*/*"],
@@ -32,7 +33,8 @@ export const getStyle: PlasmoGetStyle = () => {
 
   const style = document.createElement("style")
   style.textContent = cssText + `
-    :host {
+    :host,
+    #plasmo-shadow-container {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
@@ -40,9 +42,11 @@ export const getStyle: PlasmoGetStyle = () => {
       height: 100vh !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
+      background: transparent !important;
     }
     .hub-extension-root {
       pointer-events: auto !important;
+      background: transparent !important;
       font-family: "Satoshi", system-ui, -apple-system, sans-serif !important;
     }
     .hub-extension-root *:not(.font-preview-element, .font-preview-element *) {
@@ -173,6 +177,46 @@ export default function FontFinderContentScript() {
 
     return () => {
       storage.unwatch(activeCallbacks)
+    }
+  }, [])
+
+  // Listen for direct runtime messages from popup and background
+  useEffect(() => {
+    const handleMessage = (message: any, _sender: any, sendResponse: (response?: any) => void) => {
+      if (message?.type === "PING" || message?.type === "PING_CONTENT_SCRIPT") {
+        sendResponse({ status: "ready", tool: "font-finder" })
+        return true
+      }
+
+      if (message?.type === "START_FONT_FINDER") {
+        setIsActive(true)
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setInspectedMetrics(null)
+        storage.set("font_finder_active", true)
+        sendResponse({ success: true })
+        return true
+      }
+
+      if (
+        message?.type === "STOP_FONT_FINDER" ||
+        message?.type === "START_COLOR_PICKER" ||
+        message?.type === "START_CSS_PICKER" ||
+        message?.type === "START_ELEMENT_SELECTION" ||
+        message?.type === "START_FIGMA_PICKER"
+      ) {
+        setIsActive(false)
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setInspectedMetrics(null)
+        sendResponse({ success: true })
+        return true
+      }
+    }
+
+    chrome.runtime?.onMessage?.addListener(handleMessage)
+    return () => {
+      chrome.runtime?.onMessage?.removeListener(handleMessage)
     }
   }, [])
 
@@ -308,22 +352,18 @@ export default function FontFinderContentScript() {
     }
   }, [isActive, hoveredElement, inspectedMetrics])
 
-  // Esc key listener: close modal first if open, or deactivate font finder
+  // Esc key listener: close extension completely
   useEffect(() => {
     if (!isActive) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (inspectedMetrics) {
-          setInspectedMetrics(null)
-        } else {
-          handleClose()
-        }
+        handleClose()
       }
     }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isActive, inspectedMetrics])
+  }, [isActive])
 
   const handleClose = () => {
     setIsActive(false)
@@ -356,26 +396,14 @@ export default function FontFinderContentScript() {
     <div className={`hub-extension-root ${isDarkMode ? "dark" : ""} text-neutral-900 dark:text-neutral-100 antialiased`}>
       {/* Top Floating Active Island Pill */}
       {isActive && (
-        <div
-          style={{
-            position: "fixed",
-            top: "16px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 2147483647,
-            pointerEvents: "auto"
-          }}
-          className="animate-hub-fade-in font-sans select-none"
-        >
-          <Button
-            variant="secondary"
-            onClick={handleClose}
-            className="flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121215] text-neutral-900 dark:text-neutral-50 shadow-2xl text-xs font-black hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 transition-all select-none cursor-pointer h-auto"
-          >
-            <span className="w-2 h-2 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
-            <span>Font Finder Active (Click element to inspect / Esc to exit)</span>
-          </Button>
-        </div>
+        <ActiveToolBanner
+          title="Font Finder"
+          icon={<Type size={13} className="text-neutral-900 dark:text-neutral-100" />}
+          instruction="Click element to inspect"
+          instructionIcon={<MousePointer size={12} />}
+          onClose={handleClose}
+          isDarkMode={isDarkMode}
+        />
       )}
 
       {/* Hover Bounding Box */}
@@ -405,13 +433,13 @@ export default function FontFinderContentScript() {
               zIndex: 2147483646,
               pointerEvents: "none"
             }}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black dark:bg-white text-white dark:text-black border border-neutral-800 dark:border-neutral-200 shadow-md font-mono text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black dark:bg-white text-white dark:text-black shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]"
           >
             <span>{hoverFont}</span>
             <span className="opacity-40">|</span>
-            <span>{hoverSize}</span>
+            <span className="font-mono">{hoverSize}</span>
             <span className="opacity-40">|</span>
-            <span>w{hoverWeight}</span>
+            <span>w<span className="font-mono">{hoverWeight}</span></span>
           </div>
         </>
       )}
@@ -421,7 +449,7 @@ export default function FontFinderContentScript() {
         <div style={{ pointerEvents: "auto" }}>
           <FontFinderModal
             metrics={inspectedMetrics}
-            onClose={() => setInspectedMetrics(null)}
+            onClose={handleClose}
             isDarkMode={isDarkMode}
           />
         </div>

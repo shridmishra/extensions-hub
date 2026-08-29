@@ -7,16 +7,16 @@ import {
   ExternalLink,
   Code,
   Globe,
-  CaseUpper,
-  CaseLower,
   Minus,
-  Plus
+  Plus,
+  Info
 } from "lucide-react"
 import { copyToClipboard } from "../../lib/utils"
 import Button from "../ui/Button"
 import Badge from "../ui/Badge"
 import IconButton from "../ui/IconButton"
 import Tabs, { type TabItem } from "../ui/Tabs"
+import InspectorModal from "../ui/InspectorModal"
 
 export interface FontMetrics {
   fontFamily: string
@@ -38,20 +38,25 @@ interface FontFinderModalProps {
   isDarkMode: boolean
 }
 
-type DummyPresetKey = "element" | "headline" | "alphabet" | "numbers" | "paragraph"
+type PresetKey = "sample" | "headline" | "alphabet" | "numbers"
 
-interface DummyPreset {
-  id: DummyPresetKey
+interface PresetItem {
+  id: PresetKey
   label: string
   text: string
 }
 
-const DUMMY_PRESETS: DummyPreset[] = [
-  { id: "headline", label: "Headline", text: "Sphinx of black quartz, judge my vow." },
-  { id: "alphabet", label: "Alphabet", text: "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz" },
-  { id: "numbers", label: "123 & #", text: "0123456789 !@#$%^&*()_+-=[]{}|;:,.<>?" },
-  { id: "paragraph", label: "Paragraph", text: "Typography is the art and technique of arranging type to make written language legible, readable, and appealing." }
-]
+function formatColorToHex(color: string): string {
+  if (!color) return "-"
+  const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i)
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1], 10).toString(16).padStart(2, "0")
+    const g = parseInt(rgbMatch[2], 10).toString(16).padStart(2, "0")
+    const b = parseInt(rgbMatch[3], 10).toString(16).padStart(2, "0")
+    return `#${r}${g}${b}`.toUpperCase()
+  }
+  return color
+}
 
 const FontFinderModal: React.FC<FontFinderModalProps> = ({
   metrics,
@@ -60,13 +65,24 @@ const FontFinderModal: React.FC<FontFinderModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>("inspect")
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
-  const [activePreset, setActivePreset] = useState<DummyPresetKey>("headline")
-  const [customSample, setCustomSample] = useState<string>("Sphinx of black quartz, judge my vow.")
+  const [activePreset, setActivePreset] = useState<PresetKey>("sample")
   
   const parsedPx = parseFloat(metrics.fontSize) || 16
-  const [previewSize, setPreviewSize] = useState<number>(parsedPx)
+  const [previewSize, setPreviewSize] = useState<number>(Math.max(14, parsedPx))
   const [previewWeight, setPreviewWeight] = useState<string>(metrics.fontWeight || "400")
-  const [previewTransform, setPreviewTransform] = useState<"none" | "uppercase" | "lowercase">("none")
+
+  const defaultSample = metrics.sampleText && metrics.sampleText.trim().length > 0
+    ? metrics.sampleText.trim()
+    : "Sphinx of black quartz, judge my vow."
+
+  const [customSample, setCustomSample] = useState<string>(defaultSample)
+
+  const PRESETS: PresetItem[] = [
+    { id: "sample", label: "Sample", text: defaultSample },
+    { id: "headline", label: "Headline", text: "The quick brown fox jumps over the lazy dog." },
+    { id: "alphabet", label: "Aa–Zz", text: "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz" },
+    { id: "numbers", label: "123", text: "0123456789 !@#$%^&*()" }
+  ]
 
   // Extract clean primary font name
   const primaryFont = metrics.fontFamily.split(",")[0].replace(/['"]/g, "").trim()
@@ -75,14 +91,12 @@ const FontFinderModal: React.FC<FontFinderModalProps> = ({
 
   // Sync initial element text if available
   useEffect(() => {
-    if (metrics.sampleText && metrics.sampleText.trim().length > 0) {
-      setCustomSample(metrics.sampleText.trim())
-      setActivePreset("element")
-    } else {
-      setCustomSample(DUMMY_PRESETS[0].text)
-      setActivePreset("headline")
-    }
-    setPreviewSize(parseFloat(metrics.fontSize) || 16)
+    const initialText = metrics.sampleText && metrics.sampleText.trim().length > 0
+      ? metrics.sampleText.trim()
+      : "Sphinx of black quartz, judge my vow."
+    setCustomSample(initialText)
+    setActivePreset("sample")
+    setPreviewSize(Math.max(14, parseFloat(metrics.fontSize) || 16))
     setPreviewWeight(metrics.fontWeight || "400")
   }, [metrics])
 
@@ -136,18 +150,15 @@ const FontFinderModal: React.FC<FontFinderModalProps> = ({
   const handleCopy = async (key: string, text: string) => {
     await copyToClipboard(text)
     setCopiedKey(key)
-    setTimeout(() => setCopiedKey(null), 1800)
+    setTimeout(() => setCopiedKey(null), 2000)
   }
 
-  const handlePresetSelect = (presetId: DummyPresetKey) => {
-    setActivePreset(presetId)
-    if (presetId === "element") {
-      setCustomSample(metrics.sampleText || "Sample text")
-    } else {
-      const found = DUMMY_PRESETS.find((p) => p.id === presetId)
-      if (found) setCustomSample(found.text)
-    }
+  const handlePresetSelect = (preset: PresetItem) => {
+    setActivePreset(preset.id)
+    setCustomSample(preset.text)
   }
+
+  const fontSearchUrl = `https://fonts.google.com/?query=${encodeURIComponent(primaryFont)}`
 
   // Snippets
   const cssSnippet = `font-family: ${metrics.fontFamily};
@@ -157,20 +168,6 @@ line-height: ${metrics.lineHeight};
 letter-spacing: ${metrics.letterSpacing};
 color: ${metrics.color};`
 
-  const fontPx = parseFloat(metrics.fontSize) || 16
-  let twSize = "text-base"
-  if (fontPx <= 12) twSize = "text-xs"
-  else if (fontPx <= 14) twSize = "text-sm"
-  else if (fontPx <= 16) twSize = "text-base"
-  else if (fontPx <= 18) twSize = "text-lg"
-  else if (fontPx <= 20) twSize = "text-xl"
-  else if (fontPx <= 24) twSize = "text-2xl"
-  else if (fontPx <= 30) twSize = "text-3xl"
-  else twSize = "text-4xl"
-
-  const twWeight = `font-[${metrics.fontWeight}]`
-  const tailwindSnippet = `${twSize} ${twWeight} leading-normal`
-
   const googleFontsHtmlLink = `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=${cleanFamilyName}:wght@100..900&display=swap" rel="stylesheet">`
@@ -179,523 +176,350 @@ color: ${metrics.color};`
 
   const fontshareImport = `@import url('https://api.fontshare.com/v2/css?f[]=${fontshareFamilyName}@100,200,300,400,500,600,700,800,900&display=swap');`
 
-  // Single-word tab labels to ensure no multi-line wrapping
   const tabs: TabItem[] = [
     { id: "inspect", label: "Inspect", icon: <Type size={12} className="stroke-[2.2]" /> },
     { id: "cdn", label: "CDN", icon: <Code size={12} className="stroke-[2.2]" /> },
-    { id: "links", label: "Links", icon: <Globe size={12} className="stroke-[2.2]" /> }
+    { id: "links", label: "Directories", icon: <Globe size={12} className="stroke-[2.2]" /> }
   ]
 
-  const weights = ["300", "400", "500", "600", "700", "800", "900"]
+  const hexColor = formatColorToHex(metrics.color)
+
+  const DIRECTORY_LINKS = [
+    {
+      name: "Google Fonts",
+      tag: "Free & Open Source",
+      url: `https://fonts.google.com/?query=${encodeURIComponent(primaryFont)}`
+    },
+    {
+      name: "Fontshare",
+      tag: "Quality Typefaces by ITF",
+      url: `https://www.fontshare.com/?search=${encodeURIComponent(primaryFont)}`
+    },
+    {
+      name: "Bunny Fonts",
+      tag: "Privacy-Friendly CDN",
+      url: `https://fonts.bunny.net/?q=${encodeURIComponent(primaryFont)}`
+    },
+    {
+      name: "Fonts In Use",
+      tag: "Real-world Type Archives",
+      url: `https://fontsinuse.com/search?terms=${encodeURIComponent(primaryFont)}`
+    },
+    {
+      name: "Adobe Fonts",
+      tag: "Creative Cloud Catalog",
+      url: `https://fonts.adobe.com/search?query=${encodeURIComponent(primaryFont)}`
+    }
+  ]
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        zIndex: 2147483647,
-        width: "440px",
-        maxWidth: "calc(100vw - 48px)",
-        maxHeight: "90vh"
-      }}
-      className={`hub-extension-root ${isDarkMode ? "dark" : ""} animate-scale-in text-neutral-900 dark:text-neutral-100 select-none flex flex-col`}
+    <InspectorModal
+      icon={<Type size={14} className="text-neutral-800 dark:text-neutral-200 shrink-0 stroke-[2.2]" />}
+      title="Font Inspector"
+      breadcrumbs={[
+        { label: `<${metrics.tagName.toLowerCase()}>`, isMono: false, isBold: false },
+        { label: primaryFont, isMono: false, isBold: true }
+      ]}
+      onClose={onClose}
+      isDarkMode={isDarkMode}
     >
-      <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[86vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-900/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 flex items-center justify-center shadow-xs">
-              <Type size={13} className="stroke-[2.5]" />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-xs font-black tracking-tight leading-none text-neutral-900 dark:text-neutral-50">
-                Font Inspector
-              </h3>
-              <Badge variant="muted" className="text-[9px] py-0 px-1 font-mono">
-                &lt;{metrics.tagName.toLowerCase()}&gt;
-              </Badge>
-            </div>
-          </div>
-          <IconButton size="sm" variant="ghost" onClick={onClose} title="Close Inspector">
-            <X size={14} className="stroke-[2.5]" />
-          </IconButton>
-        </div>
+      {/* Navigation Tabs */}
+      <div>
+        <Tabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={(id) => setActiveTab(id)}
+          variant="pill"
+        />
+      </div>
 
-        {/* Navigation Tabs (One-word labels, strictly 1 line) */}
-        <div className="px-3 pt-2.5 pb-1.5 bg-white dark:bg-neutral-950 border-b border-neutral-100 dark:border-neutral-850 shrink-0">
-          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-        </div>
-
-        {/* Tab Body */}
-        <div className="flex-1 overflow-y-auto hub-scrollbar">
+          {/* TAB 1: INSPECT */}
           {activeTab === "inspect" && (
-            <div className="p-4 space-y-3.5">
-              {/* Primary Font Header Box */}
-              <div className="p-3 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/70 dark:border-neutral-800/70 flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <span className="text-[9.5px] font-black uppercase tracking-wider text-neutral-400 dark:text-neutral-500 block">
-                    Primary Font
-                  </span>
-                  <h2 className="text-[15px] font-black truncate tracking-tight text-neutral-900 dark:text-neutral-50 mt-0.5">
+            <div className="flex flex-col gap-2.5">
+              {/* Primary Font Header Row with Info Tooltip button */}
+              <div className="flex items-center justify-between gap-2 px-1">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <h2 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-50 truncate">
                     {primaryFont}
                   </h2>
-                  <p className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 truncate mt-0.5" title={metrics.fontFamily}>
-                    {metrics.fontFamily}
-                  </p>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    title={metrics.fontFamily}
+                    tooltipPosition="bottom-right"
+                    className="h-5 w-5 p-0 text-neutral-400 hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-neutral-300 shrink-0"
+                    aria-label="Font stack details"
+                  >
+                    <Info size={12} />
+                  </IconButton>
                 </div>
                 <Button
                   size="sm"
                   variant="secondary"
                   onClick={() => handleCopy("name", primaryFont)}
-                  className="text-[10px] h-7 px-2.5 shrink-0 font-bold"
+                  className="text-xs h-7 px-2.5 shrink-0 font-bold gap-1 rounded-lg"
                 >
-                  {copiedKey === "name" ? <Check size={11} className="text-neutral-900 dark:text-neutral-100" /> : <Copy size={11} />}
-                  {copiedKey === "name" ? "Copied" : "Copy Name"}
+                  {copiedKey === "name" ? (
+                    <>
+                      <Check size={12} className="text-emerald-500" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={12} />
+                      <span>Copy Name</span>
+                    </>
+                  )}
                 </Button>
               </div>
 
-              {/* Minimal Dummy Test Area */}
-              <div className="space-y-2">
-                {/* Clean Preset Chips */}
+              {/* 4-Item Compact Specs Strip */}
+              <div className="grid grid-cols-4 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 shadow-2xs py-2 text-center">
+                {/* Size */}
+                <div className="flex flex-col items-center px-1 min-w-0">
+                  <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400">Size</span>
+                  <span className="text-xs font-mono font-bold text-neutral-900 dark:text-neutral-100 mt-0.5 truncate">{metrics.fontSize}</span>
+                </div>
+
+                {/* Weight */}
+                <div className="flex flex-col items-center px-1 min-w-0">
+                  <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400">Weight</span>
+                  <span className="text-xs font-mono font-bold text-neutral-900 dark:text-neutral-100 mt-0.5 truncate">{metrics.fontWeight}</span>
+                </div>
+
+                {/* Line Height */}
+                <div className="flex flex-col items-center px-1 min-w-0">
+                  <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400">Height</span>
+                  <span className="text-xs font-mono font-bold text-neutral-900 dark:text-neutral-100 mt-0.5 truncate">{metrics.lineHeight}</span>
+                </div>
+
+                {/* Color */}
+                <div className="flex flex-col items-center px-1 min-w-0">
+                  <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400">Color</span>
+                  <div className="flex items-center gap-1 mt-0.5 justify-center">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shadow-2xs shrink-0"
+                      style={{ backgroundColor: metrics.color }}
+                    />
+                    <span className="text-xs font-mono font-bold text-neutral-900 dark:text-neutral-100 truncate">{hexColor}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Primary Feature: Font Preview Canvas */}
+              <div className="rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 shadow-2xs p-3 flex flex-col gap-2">
+                {/* Top Bar: Presets only */}
                 <div className="flex items-center gap-1 overflow-x-auto hub-scrollbar">
-                  {metrics.sampleText && (
-                    <Button
-                      size="sm"
-                      variant={activePreset === "element" ? "primary" : "secondary"}
-                      onClick={() => handlePresetSelect("element")}
-                      className="text-[10px] h-6 px-2.5 shrink-0 rounded-md font-semibold"
-                    >
-                      Element
-                    </Button>
-                  )}
-                  {DUMMY_PRESETS.map((preset) => (
+                  {PRESETS.map((preset) => (
                     <Button
                       key={preset.id}
                       size="sm"
                       variant={activePreset === preset.id ? "primary" : "secondary"}
-                      onClick={() => handlePresetSelect(preset.id)}
-                      className="text-[10px] h-6 px-2.5 shrink-0 rounded-md font-semibold"
+                      onClick={() => handlePresetSelect(preset)}
+                      className="text-xs h-6 px-2.5 shrink-0 rounded-md font-semibold"
                     >
                       {preset.label}
                     </Button>
                   ))}
                 </div>
 
-                {/* Interactive Dummy Text Box (guaranteed rendered in picked font) */}
-                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 transition-all focus-within:border-neutral-400 dark:focus-within:border-neutral-600 shadow-inner">
-                  <textarea
-                    value={customSample}
-                    onChange={(e) => setCustomSample(e.target.value)}
-                    rows={2}
-                    style={
-                      {
-                        "--preview-font-family": metrics.fontFamily,
-                        fontFamily: metrics.fontFamily,
-                        fontSize: `${previewSize}px`,
-                        fontWeight: previewWeight,
-                        textTransform: previewTransform,
-                        lineHeight: metrics.lineHeight || "1.4"
-                      } as React.CSSProperties
-                    }
-                    className="font-preview-element w-full bg-transparent text-neutral-900 dark:text-neutral-100 resize-none outline-none border-none p-0 leading-snug transition-all"
-                    placeholder="Type anything to test this font..."
-                  />
-                </div>
+                {/* Direct Canvas Textarea */}
+                <textarea
+                  value={customSample}
+                  onChange={(e) => setCustomSample(e.target.value)}
+                  rows={3}
+                  style={
+                    {
+                      "--preview-font-family": metrics.fontFamily,
+                      fontFamily: metrics.fontFamily,
+                      fontSize: `${previewSize}px`,
+                      fontWeight: previewWeight,
+                      lineHeight: metrics.lineHeight || "1.4"
+                    } as React.CSSProperties
+                  }
+                  className="font-preview-element w-full bg-transparent text-neutral-900 dark:text-neutral-100 resize-none outline-none border-none p-1 leading-relaxed text-sm min-h-[84px]"
+                  placeholder="Type to test this typeface..."
+                />
 
-                {/* Sleek Minimal Preview Controls */}
-                <div className="flex items-center justify-between p-1.5 px-2.5 rounded-lg bg-neutral-100/60 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/50 text-[11px] gap-2">
-                  {/* Size Stepper */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">Size:</span>
+                {/* Bottom Row Inside Preview Canvas: Size Stepper at Bottom Right */}
+                <div className="flex items-center justify-end pt-1">
+                  <div className="flex items-center gap-1 bg-white dark:bg-neutral-750 px-1.5 py-0.5 rounded-lg shadow-2xs">
                     <IconButton
                       size="sm"
                       variant="ghost"
                       onClick={() => setPreviewSize((s) => Math.max(10, s - 2))}
-                      className="h-5 w-5 p-0"
-                      title="Decrease size"
+                      className="h-4.5 w-4.5 p-0"
+                      title="Smaller"
                     >
                       <Minus size={10} />
                     </IconButton>
-                    <span className="font-mono font-bold text-[11px] min-w-[26px] text-center">
+                    <span className="text-xs font-mono font-bold min-w-[28px] text-center text-neutral-900 dark:text-neutral-100">
                       {previewSize}px
                     </span>
                     <IconButton
                       size="sm"
                       variant="ghost"
-                      onClick={() => setPreviewSize((s) => Math.min(48, s + 2))}
-                      className="h-5 w-5 p-0"
-                      title="Increase size"
+                      onClick={() => setPreviewSize((s) => Math.min(64, s + 2))}
+                      className="h-4.5 w-4.5 p-0"
+                      title="Larger"
                     >
                       <Plus size={10} />
                     </IconButton>
                   </div>
-
-                  {/* Weight Quick Selector */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">W:</span>
-                    <div className="flex items-center gap-0.5">
-                      {weights.map((w) => (
-                        <Button
-                          key={w}
-                          size="sm"
-                          variant={previewWeight === w ? "primary" : "ghost"}
-                          onClick={() => setPreviewWeight(w)}
-                          className="h-5 px-1 text-[9px] min-w-[18px] rounded font-bold"
-                        >
-                          {w[0]}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Case Toggle */}
-                  <div className="flex items-center gap-0.5">
-                    <IconButton
-                      size="sm"
-                      variant={previewTransform === "uppercase" ? "primary" : "ghost"}
-                      onClick={() => setPreviewTransform(previewTransform === "uppercase" ? "none" : "uppercase")}
-                      className="h-5 w-5 p-0"
-                      title="Uppercase"
-                    >
-                      <CaseUpper size={12} />
-                    </IconButton>
-                    <IconButton
-                      size="sm"
-                      variant={previewTransform === "lowercase" ? "primary" : "ghost"}
-                      onClick={() => setPreviewTransform(previewTransform === "lowercase" ? "none" : "lowercase")}
-                      className="h-5 w-5 p-0"
-                      title="Lowercase"
-                    >
-                      <CaseLower size={12} />
-                    </IconButton>
-                  </div>
                 </div>
               </div>
 
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">Size</span>
-                  <span className="font-mono font-bold text-xs mt-1 text-neutral-900 dark:text-neutral-100">{metrics.fontSize}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">Weight</span>
-                  <span className="font-mono font-bold text-xs mt-1 text-neutral-900 dark:text-neutral-100">{metrics.fontWeight}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">Line Height</span>
-                  <span className="font-mono font-bold text-xs mt-1 text-neutral-900 dark:text-neutral-100">{metrics.lineHeight}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800/70 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">Color</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span
-                      className="w-3.5 h-3.5 rounded-full border border-neutral-300 dark:border-neutral-700 shrink-0 shadow-2xs"
-                      style={{ backgroundColor: metrics.color }}
-                    />
-                    <span className="font-mono font-bold text-[11px] truncate text-neutral-900 dark:text-neutral-100">{metrics.color}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Snippet Copy Buttons */}
+              {/* Actions: Copy CSS and Google Fonts */}
               <div className="grid grid-cols-2 gap-2 pt-0.5">
                 <Button
-                  size="sm"
-                  variant="secondary"
+                  variant="primary"
+                  size="md"
                   onClick={() => handleCopy("css", cssSnippet)}
-                  className="text-[11px] h-8 font-bold"
+                  className="text-xs font-bold gap-1.5 h-9 w-full rounded-xl"
                 >
-                  {copiedKey === "css" ? <Check size={12} className="text-neutral-900 dark:text-neutral-100" /> : <Copy size={12} />}
-                  {copiedKey === "css" ? "Copied CSS" : "Copy CSS"}
+                  {copiedKey === "css" ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy CSS</span>
+                    </>
+                  )}
                 </Button>
+
                 <Button
-                  size="sm"
                   variant="secondary"
-                  onClick={() => handleCopy("tailwind", tailwindSnippet)}
-                  className="text-[11px] h-8 font-bold"
+                  size="md"
+                  onClick={() => window.open(fontSearchUrl, "_blank", "noopener,noreferrer")}
+                  className="text-xs font-bold gap-1.5 h-9 w-full rounded-xl"
                 >
-                  {copiedKey === "tailwind" ? <Check size={12} className="text-neutral-900 dark:text-neutral-100" /> : <Copy size={12} />}
-                  {copiedKey === "tailwind" ? "Copied Tailwind" : "Copy Tailwind"}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Google Fonts</span>
                 </Button>
               </div>
             </div>
           )}
 
+          {/* TAB 2: CDN */}
           {activeTab === "cdn" && (
-            <div className="p-4 space-y-3">
-              <div className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium">
-                CDN and embed snippets for <span className="font-bold text-neutral-900 dark:text-neutral-100">{primaryFont}</span>:
-              </div>
-
+            <div className="flex flex-col gap-2.5">
               {/* Google Fonts HTML Link */}
-              <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200/70 dark:border-neutral-800/70 space-y-2">
+              <div className="p-3 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 shadow-2xs flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="interactive" className="text-[9px]">HTML Link</Badge>
-                    <span className="text-[11px] font-bold text-neutral-800 dark:text-neutral-200">Google Fonts</span>
-                  </div>
+                  <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                    Google Fonts &lt;link&gt;
+                  </span>
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={() => handleCopy("gf-link", googleFontsHtmlLink)}
-                    className="text-[10px] h-6 px-2 font-bold"
+                    className="text-xs h-6 px-2 font-bold gap-1 rounded-md"
                   >
-                    {copiedKey === "gf-link" ? <Check size={11} className="text-neutral-900 dark:text-neutral-100" /> : <Copy size={11} />}
-                    {copiedKey === "gf-link" ? "Copied" : "Copy Link"}
+                    {copiedKey === "gf-link" ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                    <span>{copiedKey === "gf-link" ? "Copied" : "Copy"}</span>
                   </Button>
                 </div>
-                <pre className="p-2 rounded-lg bg-white dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800/60 font-mono text-[10px] text-neutral-700 dark:text-neutral-300 overflow-x-auto whitespace-pre hub-scrollbar select-text">
+                <pre className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 font-mono text-xs text-neutral-800 dark:text-neutral-200 overflow-x-auto whitespace-pre hub-scrollbar select-text leading-relaxed shadow-2xs">
                   {googleFontsHtmlLink}
                 </pre>
               </div>
 
-              {/* Google Fonts CSS @import */}
-              <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200/70 dark:border-neutral-800/70 space-y-2">
+              {/* Google Fonts @import */}
+              <div className="p-3 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 shadow-2xs flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="neutral" className="text-[9px]">CSS Import</Badge>
-                    <span className="text-[11px] font-bold text-neutral-800 dark:text-neutral-200">Google Fonts</span>
-                  </div>
+                  <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                    Google Fonts @import
+                  </span>
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={() => handleCopy("gf-import", googleFontsImport)}
-                    className="text-[10px] h-6 px-2 font-bold"
+                    className="text-xs h-6 px-2 font-bold gap-1 rounded-md"
                   >
-                    {copiedKey === "gf-import" ? <Check size={11} className="text-neutral-900 dark:text-neutral-100" /> : <Copy size={11} />}
-                    {copiedKey === "gf-import" ? "Copied" : "Copy @import"}
+                    {copiedKey === "gf-import" ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                    <span>{copiedKey === "gf-import" ? "Copied" : "Copy"}</span>
                   </Button>
                 </div>
-                <pre className="p-2 rounded-lg bg-white dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800/60 font-mono text-[10px] text-neutral-700 dark:text-neutral-300 overflow-x-auto whitespace-pre hub-scrollbar select-text">
+                <pre className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 font-mono text-xs text-neutral-800 dark:text-neutral-200 overflow-x-auto whitespace-pre hub-scrollbar select-text leading-relaxed shadow-2xs">
                   {googleFontsImport}
                 </pre>
               </div>
 
-              {/* Fontshare CSS @import */}
-              <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200/70 dark:border-neutral-800/70 space-y-2">
+              {/* Fontshare @import */}
+              <div className="p-3 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 shadow-2xs flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="neutral" className="text-[9px]">CSS Import</Badge>
-                    <span className="text-[11px] font-bold text-neutral-800 dark:text-neutral-200">Fontshare</span>
-                  </div>
+                  <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                    Fontshare @import
+                  </span>
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={() => handleCopy("fs-import", fontshareImport)}
-                    className="text-[10px] h-6 px-2 font-bold"
+                    className="text-xs h-6 px-2 font-bold gap-1 rounded-md"
                   >
-                    {copiedKey === "fs-import" ? <Check size={11} className="text-neutral-900 dark:text-neutral-100" /> : <Copy size={11} />}
-                    {copiedKey === "fs-import" ? "Copied" : "Copy @import"}
+                    {copiedKey === "fs-import" ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                    <span>{copiedKey === "fs-import" ? "Copied" : "Copy"}</span>
                   </Button>
                 </div>
-                <pre className="p-2 rounded-lg bg-white dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800/60 font-mono text-[10px] text-neutral-700 dark:text-neutral-300 overflow-x-auto whitespace-pre hub-scrollbar select-text">
+                <pre className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 font-mono text-xs text-neutral-800 dark:text-neutral-200 overflow-x-auto whitespace-pre hub-scrollbar select-text leading-relaxed shadow-2xs">
                   {fontshareImport}
                 </pre>
               </div>
 
-              {/* Full CSS Declaration */}
-              <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200/70 dark:border-neutral-800/70 space-y-2">
+              {/* CSS Declaration Rule */}
+              <div className="p-3 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 shadow-2xs flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-neutral-800 dark:text-neutral-200">CSS Rule</span>
+                  <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                    CSS Declaration
+                  </span>
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={() => handleCopy("css-full", cssSnippet)}
-                    className="text-[10px] h-6 px-2 font-bold"
+                    className="text-xs h-6 px-2 font-bold gap-1 rounded-md"
                   >
-                    {copiedKey === "css-full" ? <Check size={11} className="text-neutral-900 dark:text-neutral-100" /> : <Copy size={11} />}
-                    {copiedKey === "css-full" ? "Copied" : "Copy CSS"}
+                    {copiedKey === "css-full" ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                    <span>{copiedKey === "css-full" ? "Copied" : "Copy"}</span>
                   </Button>
                 </div>
-                <pre className="p-2 rounded-lg bg-white dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800/60 font-mono text-[10px] text-neutral-700 dark:text-neutral-300 overflow-x-auto whitespace-pre hub-scrollbar select-text">
+                <pre className="p-2.5 rounded-lg bg-white dark:bg-neutral-900 font-mono text-xs text-neutral-800 dark:text-neutral-200 overflow-x-auto whitespace-pre hub-scrollbar select-text leading-relaxed shadow-2xs">
                   {cssSnippet}
                 </pre>
               </div>
             </div>
           )}
 
+          {/* TAB 3: DIRECTORIES */}
           {activeTab === "links" && (
-            <div className="p-4 space-y-2.5">
-              <div className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium">
-                Find <span className="font-bold text-neutral-900 dark:text-neutral-100">{primaryFont}</span> on font directories:
-              </div>
-
-              <div className="space-y-1.5">
-                {/* Fontshare */}
+            <div className="flex flex-col gap-2">
+              {DIRECTORY_LINKS.map((dir) => (
                 <a
-                  href={`https://www.fontshare.com/?search=${encodeURIComponent(primaryFont)}`}
+                  key={dir.name}
+                  href={dir.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between p-2.5 px-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all group"
+                  className="flex items-center justify-between p-3 rounded-xl bg-neutral-100/70 dark:bg-neutral-850/70 hover:bg-neutral-200/60 dark:hover:bg-neutral-800 shadow-2xs hover:shadow-xs transition-all group"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-[11px] text-neutral-900 dark:text-neutral-100">
-                      FS
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:underline flex items-center gap-1">
-                        Fontshare
-                        <ExternalLink size={10} className="text-neutral-400" />
-                      </h4>
-                      <p className="text-[9.5px] text-neutral-500 dark:text-neutral-400">
-                        Indian Type Foundry free fonts & CDN
-                      </p>
-                    </div>
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-black dark:group-hover:text-white flex items-center gap-1">
+                      {dir.name}
+                      <ExternalLink size={11} className="text-neutral-400 opacity-60 group-hover:opacity-100" />
+                    </span>
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
+                      {dir.tag}
+                    </span>
                   </div>
-                  <Badge variant="neutral" className="text-[9px]">Open</Badge>
+                  <Badge variant="neutral" className="shrink-0">
+                    Open
+                  </Badge>
                 </a>
-
-                {/* Google Fonts */}
-                <a
-                  href={`https://fonts.google.com/?query=${encodeURIComponent(primaryFont)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-2.5 px-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-[11px] text-neutral-900 dark:text-neutral-100">
-                      GF
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:underline flex items-center gap-1">
-                        Google Fonts
-                        <ExternalLink size={10} className="text-neutral-400" />
-                      </h4>
-                      <p className="text-[9.5px] text-neutral-500 dark:text-neutral-400">
-                        Open-source font catalog
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="neutral" className="text-[9px]">Open</Badge>
-                </a>
-
-                {/* Bunny Fonts */}
-                <a
-                  href={`https://fonts.bunny.net/?q=${encodeURIComponent(primaryFont)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-2.5 px-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-[11px] text-neutral-900 dark:text-neutral-100">
-                      BF
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:underline flex items-center gap-1">
-                        Bunny Fonts
-                        <ExternalLink size={10} className="text-neutral-400" />
-                      </h4>
-                      <p className="text-[9.5px] text-neutral-500 dark:text-neutral-400">
-                        Privacy-friendly Google Fonts mirror
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="neutral" className="text-[9px]">Open</Badge>
-                </a>
-
-                {/* Fonts In Use */}
-                <a
-                  href={`https://fontsinuse.com/search?terms=${encodeURIComponent(primaryFont)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-2.5 px-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-[11px] text-neutral-900 dark:text-neutral-100">
-                      FU
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:underline flex items-center gap-1">
-                        Fonts in Use
-                        <ExternalLink size={10} className="text-neutral-400" />
-                      </h4>
-                      <p className="text-[9.5px] text-neutral-500 dark:text-neutral-400">
-                        Real-world typography specimens
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="neutral" className="text-[9px]">Open</Badge>
-                </a>
-
-                {/* CDNfonts */}
-                <a
-                  href={`https://www.cdnfonts.com/search?q=${encodeURIComponent(primaryFont)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-2.5 px-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-[11px] text-neutral-900 dark:text-neutral-100">
-                      CF
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:underline flex items-center gap-1">
-                        CDNfonts
-                        <ExternalLink size={10} className="text-neutral-400" />
-                      </h4>
-                      <p className="text-[9.5px] text-neutral-500 dark:text-neutral-400">
-                        Web font CDN files
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="neutral" className="text-[9px]">Open</Badge>
-                </a>
-
-                {/* Adobe Fonts */}
-                <a
-                  href={`https://fonts.adobe.com/search?query=${encodeURIComponent(primaryFont)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-2.5 px-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-850 transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-[11px] text-neutral-900 dark:text-neutral-100">
-                      AF
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:underline flex items-center gap-1">
-                        Adobe Fonts
-                        <ExternalLink size={10} className="text-neutral-400" />
-                      </h4>
-                      <p className="text-[9.5px] text-neutral-500 dark:text-neutral-400">
-                        Adobe Creative Cloud catalog
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="neutral" className="text-[9px]">Open</Badge>
-                </a>
-              </div>
+              ))}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 py-2.5 bg-neutral-50/80 dark:bg-neutral-900/60 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500 shrink-0">
-          <span>Click element or press Esc</span>
-          <div className="flex items-center gap-2">
-            <a
-              href={`https://www.fontshare.com/?search=${encodeURIComponent(primaryFont)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="font-bold text-neutral-700 dark:text-neutral-300 hover:underline flex items-center gap-0.5"
-            >
-              Fontshare <ExternalLink size={9} />
-            </a>
-            <span>•</span>
-            <a
-              href={`https://fonts.google.com/?query=${encodeURIComponent(primaryFont)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="font-bold text-neutral-700 dark:text-neutral-300 hover:underline flex items-center gap-0.5"
-            >
-              Google Fonts <ExternalLink size={9} />
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+    </InspectorModal>
   )
 }
 

@@ -10,8 +10,9 @@
     "package": "plasmo package",
     "test": "node --test tests/*.test.ts",
     "test:colors": "node --test tests/color-detector.test.ts",
+    "lint:typography": "node scripts/check-typography.mjs",
     "typecheck": "tsc --noEmit",
-    "validate": "node --test tests/*.test.ts && tsc --noEmit && plasmo build",
+    "validate": "node scripts/check-typography.mjs && node --test tests/*.test.ts && tsc --noEmit && plasmo build",
     "create:extension": "node scripts/create-extension.mjs",
     "generate:icons": "python3 scripts/generate_icon.py",
     "generate:store-assets": "python3 scripts/generate-store-assets.py"

@@ -181,6 +181,13 @@ function init() {
     }
   })
 
+  chrome.runtime?.onMessage?.addListener((msg, sender, sendResponse) => {
+    if (msg?.type === "PING" || msg?.type === "PING_CONTENT_SCRIPT") {
+      sendResponse({ status: "ready", tool: "yt-music-auto-song" })
+      return true
+    }
+  })
+
   // Light periodic check (only fires if not already handled for this video ID)
   setInterval(() => {
     const urlParams = new URLSearchParams(window.location.search)

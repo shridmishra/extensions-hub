@@ -42,9 +42,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             else if (ref) ref.current = node
           }}
           className={cn(
-            "flex h-8 w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0e] py-1 text-xs font-medium text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 transition-colors focus-visible:border-neutral-700 dark:focus-visible:border-neutral-400 focus-visible:outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-500/20 disabled:cursor-not-allowed disabled:opacity-50",
-            icon ? "pl-8" : "pl-2.5",
-            actionRight ? "pr-8" : "pr-2.5",
+            type === "range"
+              ? "w-full cursor-pointer appearance-none bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-lg accent-neutral-900 dark:accent-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none"
+              : "flex h-8 w-full rounded-lg bg-neutral-100 dark:bg-neutral-850 py-1 text-xs font-medium text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 transition-all shadow-2xs focus-visible:bg-white dark:focus-visible:bg-neutral-900 focus-visible:shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400/40 dark:focus-visible:ring-neutral-600/50 disabled:cursor-not-allowed disabled:opacity-50",
+            icon ? "pl-8" : type !== "range" ? "pl-2.5" : "",
+            actionRight ? "pr-8" : type !== "range" ? "pr-2.5" : "",
             className
           )}
           {...props}
