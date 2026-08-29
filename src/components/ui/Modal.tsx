@@ -85,13 +85,13 @@ const Modal: React.FC<ModalProps> = ({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0e] text-neutral-900 dark:text-neutral-100 shadow-xl animate-scale-in flex flex-col max-h-[92vh] overflow-hidden",
+          "relative w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0e] text-neutral-900 dark:text-neutral-100 shadow-2xl animate-scale-in flex flex-col max-h-[92vh] overflow-hidden",
           width,
           className
         )}
       >
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800/80 flex-shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800/80 flex-shrink-0 rounded-t-2xl">
             <div className="min-w-0 pr-2">
               {title && (
                 <h3 className="text-[13px] font-extrabold text-neutral-900 dark:text-neutral-50 truncate tracking-tight">
@@ -111,6 +111,7 @@ const Modal: React.FC<ModalProps> = ({
                 onClick={onClose}
                 title="Close (Esc)"
                 aria-label="Close"
+                tooltipPosition="bottom-left"
               >
                 <X size={14} className="stroke-[2.5]" />
               </IconButton>

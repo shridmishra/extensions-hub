@@ -22,6 +22,7 @@ import {
   Tv,
   ArrowRight
 } from "lucide-react"
+import YtMusicIcon from "../ui/YtMusicIcon"
 
 interface YtMusicSettingsModalProps {
   isOpen: boolean
@@ -119,9 +120,7 @@ export const YtMusicSettingsModal: React.FC<YtMusicSettingsModalProps> = ({
       onClose={onClose}
       title={
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-neutral-900 dark:bg-neutral-100 flex items-center justify-center text-white dark:text-neutral-900">
-            <Music size={12} className="stroke-[2.5]" />
-          </div>
+          <YtMusicIcon size={18} className="shrink-0" />
           <span>YouTube Music Switcher</span>
         </div>
       }

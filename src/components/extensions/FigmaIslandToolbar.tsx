@@ -50,9 +50,9 @@ export const FigmaIslandToolbar: React.FC<FigmaIslandToolbarProps> = ({
       }}
       className={`hub-extension-root ${isDarkMode ? "dark" : ""} animate-scale-in select-none font-sans`}
     >
-      <div className="flex items-center h-12 px-2.5 gap-1.5 rounded-2xl bg-neutral-900/95 dark:bg-[#121215]/95 text-white border border-neutral-700/60 dark:border-neutral-800 shadow-2xl backdrop-blur-md">
+      <div className="flex items-center h-12 px-2.5 gap-1.5 rounded-full bg-neutral-900/95 dark:bg-[#121215]/95 text-white border border-neutral-700/60 dark:border-neutral-800 shadow-2xl backdrop-blur-md">
         {/* Brand Logo & Name */}
-        <div className="flex items-center gap-2 px-2 h-9 text-white font-black text-sm tracking-tight shrink-0">
+        <div className="flex items-center gap-2 px-2.5 h-9 text-white font-black text-sm tracking-tight shrink-0">
           <FigmaIcon size={18} className="shrink-0" />
           <span>Figma</span>
         </div>
@@ -66,7 +66,7 @@ export const FigmaIslandToolbar: React.FC<FigmaIslandToolbarProps> = ({
           onClick={onCapturePage}
           disabled={isCapturingPage}
           title="1-Click Capture Entire Page to Figma"
-          className="h-9 px-3 text-sm font-bold text-neutral-200 hover:text-white hover:bg-neutral-800/80 gap-2 shrink-0 border-0"
+          className="h-9 px-3 text-sm font-bold text-neutral-200 hover:text-white hover:bg-neutral-800/80 gap-2 shrink-0 border-0 rounded-full"
         >
           {isCapturingPage ? (
             <svg className="animate-spin h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24">
@@ -85,7 +85,7 @@ export const FigmaIslandToolbar: React.FC<FigmaIslandToolbarProps> = ({
           size="md"
           onClick={() => onModeChange("figma-element")}
           title="Hover and click any element to copy for Figma"
-          className={`h-9 px-3 text-sm font-bold gap-2 shrink-0 ${
+          className={`h-9 px-3 text-sm font-bold gap-2 shrink-0 rounded-full ${
             currentMode === "figma-element"
               ? "bg-neutral-800 text-white shadow-xs border border-neutral-700/80 hover:bg-neutral-750"
               : "text-neutral-200 hover:text-white hover:bg-neutral-800/80 border-0"
@@ -101,7 +101,7 @@ export const FigmaIslandToolbar: React.FC<FigmaIslandToolbarProps> = ({
           size="md"
           onClick={() => onModeChange("inspect-css")}
           title="Hover and click any element to inspect & copy CSS"
-          className={`h-9 px-3 text-sm font-bold gap-2 shrink-0 ${
+          className={`h-9 px-3 text-sm font-bold gap-2 shrink-0 rounded-full ${
             currentMode === "inspect-css"
               ? "bg-neutral-800 text-white shadow-xs border border-neutral-700/80 hover:bg-neutral-750"
               : "text-neutral-200 hover:text-white hover:bg-neutral-800/80 border-0"
@@ -120,7 +120,8 @@ export const FigmaIslandToolbar: React.FC<FigmaIslandToolbarProps> = ({
           onClick={onClose}
           title="Close (Esc)"
           aria-label="Close"
-          className="text-neutral-400 hover:text-white hover:bg-neutral-800 h-8 w-8 rounded-lg shrink-0"
+          tooltipPosition="bottom-left"
+          className="text-neutral-400 hover:text-white hover:bg-neutral-800 h-8 w-8 rounded-full shrink-0"
         >
           <X className="w-4 h-4" />
         </IconButton>

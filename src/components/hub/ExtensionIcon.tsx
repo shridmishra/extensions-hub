@@ -22,6 +22,9 @@ import {
   Disc
 } from "lucide-react"
 import FigmaIcon from "../ui/FigmaIcon"
+import CssIcon from "../ui/CssIcon"
+import YtMusicIcon from "../ui/YtMusicIcon"
+import YouTubeIcon from "../ui/YouTubeIcon"
 
 interface ExtensionIconProps {
   name: string
@@ -37,6 +40,21 @@ export const ExtensionIcon: React.FC<ExtensionIconProps> = ({
   switch (name) {
     case "Figma":
       return <FigmaIcon size={size} className={className} />
+    case "CSS":
+    case "Css":
+    case "Css3":
+      return <CssIcon size={size} className={className} />
+    case "YtMusic":
+    case "YouTubeMusic":
+    case "YTMusic":
+      return (
+        <YtMusicIcon
+          size={typeof size === "number" ? Math.round(size * 1.15) : size}
+          className={className}
+        />
+      )
+    case "YouTube":
+      return <YouTubeIcon size={size} className={className} />
     case "Type":
       return <Type size={size} className={className} />
     case "Pipette":

@@ -1,80 +1,200 @@
 # Chrome Web Store Listing: Extension Hub
 
-**Last Updated:** August 29, 2026  
-**Extension Name:** Extension Hub: All-in-One Micro-Extension Suite  
-**Version:** 1.1.0  
-**Category:** Productivity / Developer Tools  
+> **Last Updated:** August 29, 2026  
+> **Extension Name:** Extension Hub: All-in-One Micro-Extension Suite  
+> **Version:** 1.1.0  
+> **Category:** Productivity (Secondary: Developer Tools)  
 
 ---
 
-## 1. Store Metadata
+## 1. Store Listing Metadata
 
-### Title
-`Extension Hub: All-in-One Micro-Extension Suite` (46 / 75 chars)
+### Extension Name [REQUIRED]
+```
+Extension Hub: All-in-One Micro-Extension Suite
+```
+*(46 / 75 characters)*
 
-### Summary
-`A modular extension launcher featuring YouTube Music Switcher, Font Finder, Color Picker, and Website Dark Mode Forcer.` (122 / 132 chars)
+### Short Description [REQUIRED]
+```
+A modular extension launcher featuring YouTube Music Switcher, Font Finder, Color Picker, and Website Dark Mode Forcer.
+```
+*(122 / 132 characters)*
 
-### Detailed Description
-Extension Hub is an all-in-one productivity suite and modular extension manager. Instead of installing dozens of separate browser extensions that slow down your browser, Extension Hub hosts a curated collection of micro-extensions inside a single lightweight, high-performance extension.
+### Detailed Description [REQUIRED]
+*(Copy and paste the plain text below into the Chrome Web Store Developer Console. CWS does not render markdown headers, so clean line breaks and bullet characters `•` are used.)*
 
-### Key Features
+```
+Extension Hub is an all-in-one productivity suite and modular extension manager. Instead of installing dozens of separate browser extensions that clutter your toolbar and slow down your browser, Extension Hub hosts a curated collection of high-performance micro-extensions inside a single lightweight popup.
 
-✦ **YouTube to YouTube Music Switcher:**
-- **Player Timeline Switch Icon**: Injects a native YouTube Music switch button directly into YouTube video player controls.
-- **Timestamp & Playlist Sync**: Jump from any YouTube song or video to YouTube Music with preserved playback timestamps (`&t=...s`) and playlist queue context.
-- **Shorts & Keyboard Shortcut**: Works seamlessly on YouTube Shorts and supports `Shift+M` hotkey.
+FEATURES
 
-✦ **Interactive On-Demand Tools:**
-- **Font Finder Inspector**: Hover and inspect typography across any webpage. View font family, rendered size, weight, line-height, letter-spacing, and copy CSS or Tailwind snippets.
-- **Precision Color Picker**: Sample any pixel from your screen using the EyeDropper API. Automatically copy HEX, RGB, and HSL values to clipboard and maintain a saved palette history.
+• YouTube to YouTube Music Switcher
+  - Timeline Switch Button: Injects a native YouTube Music switch icon directly into the YouTube video player controls.
+  - Timestamp & Playlist Sync: Jump from any YouTube song or video to YouTube Music with preserved playback timestamps (&t=...s) and playlist context.
+  - Shorts & Hotkey Support: Works on YouTube Shorts and supports Shift+M keyboard shortcut for instant audio switching.
+  - Custom Settings: Choose navigation target (same tab or new tab), toggle auto-pause, and convert URLs instantly.
 
-✦ **Always-Enabled Background Tools:**
-- **Smart Dark / Light Mode Forcer**: Enforce high-contrast dark or light mode on any website. Smart media detection preserves photos, videos, and graphics without washed-out colors.
+• Font Finder Typography Inspector
+  - Hover over any element to inspect rendered font family, font size, weight, line-height, letter-spacing, and colors.
+  - Copy CSS rulesets and Tailwind CSS utility classes with one click.
+  - Live editable preview box to test typography tweaks on the fly.
 
-✦ **Customizable Hub & Extension Store:**
-- **Pin Your Top Tools**: Choose your top 2, 5, 10+ favorite extensions to keep directly in the main popup for instant one-click access.
-- **Search & Filter**: Quickly find any extension or tool across the catalog.
-- **Multi-Criteria Sorting**: Sort extensions by number-wise index, most starred, or most liked.
+• Pixel Color Picker & Palette Builder
+  - Sample any pixel on your screen with precision using the native EyeDropper API.
+  - Automatically copy HEX, RGB, and HSL values to clipboard.
+  - Maintain a saved palette history for your design projects.
+
+• Smart Website Dark/Light Mode Forcer
+  - Enforce clean, high-contrast dark or light mode on any website.
+  - Intelligent media detection preserves photos, videos, canvas, and graphics without washed-out colors.
+  - Multiple presets: High Contrast Dark, Soft Charcoal, Light Mode Invert, and Warm Night Shift.
+
+• CSS Style & Box Model Inspector
+  - Click any DOM element to extract computed styles, box model dimensions (margin, padding, border), and Tailwind classes.
+
+• HTML to Figma Vector Importer
+  - Capture web elements or entire layouts as clean vector layers and paste directly onto your Figma canvas.
+
+• Customizable Hub & Store
+  - Pin your top favorite micro-extensions for instant one-click access.
+  - Search and filter tools by category (Typography, Design, Developer, Accessibility, Utility).
+  - Sort by number, stars, likes, or alphabetically.
+
+HOW TO USE
+
+1. Click the Extension Hub icon in your Chrome toolbar.
+2. Launch any interactive micro-extension (Font Finder, Color Picker, CSS Inspector) by clicking its card or using its shortcut.
+3. On YouTube, look for the YouTube Music icon in the video player control bar (or press Shift+M) to jump straight to YouTube Music at the exact timestamp.
+4. Pin or reorder your favorite tools to customize your launcher.
+
+PRIVACY & PERMISSIONS
+
+• 100% Client-Side: All tools run completely offline inside your browser. No remote servers, no telemetry, and no third-party analytics.
+• Zero Data Collection: Extension Hub never collects, stores, or transmits your personal information or browsing history.
+• Local Storage Only: Preferences (pinned tools, saved palettes, dark mode toggles) are stored locally in your browser via chrome.storage.local.
+
+PERMISSIONS EXPLAINED
+
+• "Storage" — Used to save your pinned tools, dark mode preferences, and saved palettes locally on your device.
+• "Tabs" — Used to query the active tab when activating on-demand inspection tools and switching video playback.
+• "Scripting" & "Active Tab" — Used to inject inspection overlays and stylesheets on the active tab only when you trigger a tool.
+• "Host Permissions" — Required for the YouTube Music Switcher and Dark Mode theme forcer to run on target pages.
+
+SUPPORT & FEEDBACK
+
+Found a bug or have a suggestion for a new micro-extension?
+• Email: shridmishra00@gmail.com
+• GitHub: https://github.com/shridmishra/extension-hub
+
+Version 1.1.0 — Added YouTube to YouTube Music Switcher with timeline button, timestamp sync, and hotkey support.
+```
+
+### Category [REQUIRED]
+- **Primary Category:** `Productivity`
+- **Secondary Category:** `Developer Tools`
+
+### Single Purpose Statement [REQUIRED]
+```
+Provides a unified modular launcher for client-side productivity and developer micro-tools including YouTube Music redirection, font inspection, color picking, and dark mode.
+```
+
+### Primary Language [REQUIRED]
+```
+English
+```
 
 ---
 
-## 2. Permissions Justification
+## 2. Graphics & Promotional Assets
 
-| Permission | Justification |
-|---|---|
-| `storage` | Required to persist user's pinned extensions, saved color palettes, font inspection history, YouTube Music switcher settings, and dark mode preferences locally across sessions. |
-| `tabs` | Required to query the active tab and communicate with page content scripts when launching interactive tools and switching playback. |
-| `scripting` | Required to inject inspection overlays, switch buttons, and stylesheets on active web pages on user demand. |
-| `activeTab` | Required to grant temporary script execution permissions on the currently focused tab when launching on-demand tools. |
-| `host_permissions: ["http://*/*", "https://*/*"]` | Required for the YouTube Music Switcher, Font Finder, Color Picker, and Smart Dark Mode Forcer to inspect elements and inject player controls across web pages. |
+All required graphics are generated in high resolution inside the [`store-assets/`](file:///Users/shrid/Repos/projects/extension-hub/store-assets) directory:
 
----
-
-## 3. Privacy & Data Disclosures
-
-- **Single Purpose**: Provide a unified suite of productivity micro-tools (YouTube Music Switcher, Font Finder, Color Picker, Theme Forcer) inside a single extension.
-- **Data Collection**: None. No personal data, telemetry, or browsing history is collected, tracked, or transmitted to any external server. All state is stored locally within browser storage.
-- **Offline Capable**: All tools run 100% client-side inside the browser.
+| Asset | Dimensions | Status | Location / Filename |
+|---|---|---|---|
+| **Store Icon** [REQUIRED] | 128×128 PNG | ✅ Ready | `store-assets/icon-128x128.png` |
+| **Screenshot 1: Hub & Catalog** [REQUIRED] | 1280×800 PNG | ✅ Ready | `store-assets/screenshot-1-hub-1280x800.png` |
+| **Screenshot 2: YouTube Switcher** [RECOMMENDED] | 1280×800 PNG | ✅ Ready | `store-assets/screenshot-2-ytmusic-1280x800.png` |
+| **Screenshot 3: DevTools Suite** [RECOMMENDED] | 1280×800 PNG | ✅ Ready | `store-assets/screenshot-3-devtools-1280x800.png` |
+| **Small Promo Tile** [RECOMMENDED] | 440×280 PNG | ✅ Ready | `store-assets/small-promo-tile-440x280.png` |
+| **Marquee Promo Banner** [RECOMMENDED] | 1400×560 PNG | ✅ Ready | `store-assets/marquee-promo-tile-1400x560.png` |
 
 ---
 
-## 4. Version History
+## 3. Permissions Justification
 
-### Version 1.1.0 (Current Release)
-- Added **YouTube to YT Music Redirector**:
-  - Injected native YouTube Music switch button into the YouTube video player timeline controls (`.ytp-right-controls`).
-  - Automatic timestamp synchronization (`&t=...s`) and playlist ID forwarding.
-  - YouTube Shorts player integration.
-  - Keyboard shortcut `Shift+M` support for rapid audio switching.
-  - Hub popup settings modal with customizable navigation targets (same tab vs. new tab), auto-pause control, and instant URL converter.
-- Upgraded extension registry and store categories.
+| Permission | Type | User-Facing Feature & Plain-English Justification |
+|---|---|---|
+| `storage` | `permissions` | Required to save user preferences (pinned tools, YouTube Switcher settings, saved color palettes, and dark mode toggles) locally on the device using `chrome.storage.local`. |
+| `tabs` | `permissions` | Required to detect the active tab when the user launches interactive tools (Font Finder, Color Picker, CSS Picker) and to switch video URLs to YouTube Music. |
+| `scripting` | `permissions` | Required to inject inspection overlays, element highlight outlines, and styling helpers into the active tab on user demand. |
+| `activeTab` | `permissions` | Required to grant temporary script execution permissions on the currently focused tab when launching on-demand tools from the popup. |
+| `http://*/*`, `https://*/*` | `host_permissions` | Required for the YouTube Music Switcher (on `youtube.com` and `music.youtube.com`), Smart Dark Mode Forcer, and on-demand DOM inspection tools to interact with web pages. |
 
-### Version 1.0.0 (Initial Release)
-- Modular Extension Hub architecture.
-- Font Finder Inspector with live hover metrics, editable preview, and CSS/Tailwind export.
-- Precision Pixel Color Picker with EyeDropper integration and saved palette manager.
-- Smart Website Dark/Light Mode Forcer with media protection.
-- Extension Catalog Store with search, category filters, and sorting (Number, Most Starred, Most Liked, A–Z).
-- Monochrome Black & White design system with Satoshi typography.
+---
 
+## 4. Privacy & Data Use Disclosures
+
+### Data Collection Audit
+
+**Does the extension collect user data?** No.
+
+| Data Type | Collected? | Transmitted Off-Device? | Purpose | Shared with Third Parties? |
+|---|---|---|---|---|
+| Personally identifiable info | No | No | None | No |
+| Health info | No | No | None | No |
+| Financial info | No | No | None | No |
+| Authentication info | No | No | None | No |
+| Personal communications | No | No | None | No |
+| Location | No | No | None | No |
+| Web history | No | No | None | No |
+| User activity | No | No | None | No |
+| Website content | No | No | None | No |
+
+### Data Use Certification
+- [x] Data is NOT sold to third parties
+- [x] Data is NOT used for purposes unrelated to the extension's core functionality
+- [x] Data is NOT used for creditworthiness or lending purposes
+
+---
+
+## 5. Privacy Policy
+
+- **Privacy Policy File:** [`PRIVACY.md`](file:///Users/shrid/Repos/projects/extension-hub/PRIVACY.md)
+- **Privacy Policy URL:** `https://github.com/shridmishra/extension-hub/blob/main/PRIVACY.md` *(or your hosted GitHub Pages / website link)*
+
+---
+
+## 6. Distribution & Pricing
+
+- **Visibility:** Public
+- **Geographic Regions:** All regions (Worldwide)
+- **Pricing:** Free
+- **Target Audience:** General Public & Web Developers
+
+---
+
+## 7. Developer Info
+
+- **Publisher / Developer Name:** Shridhar Mishra
+- **Contact Email:** `shridmishra00@gmail.com`
+- **Support URL:** `https://github.com/shridmishra/extension-hub/issues`
+- **Homepage URL:** `https://github.com/shridmishra/extension-hub`
+
+---
+
+## 8. Version History
+
+| Version | Date | Changes | Status |
+|---|---|---|---|
+| **1.1.0** | 2026-08-29 | Added YouTube to YouTube Music Switcher (timeline button, timestamp sync, shorts support, hotkey `Shift+M`), store promotional assets suite, updated privacy policy, and packaging validation. | **Ready for Submission** |
+| **1.0.0** | 2026-08-28 | Initial release of Extension Hub: Modular extension registry, Font Finder, Color Picker, CSS Picker, HTML to Figma Importer, Smart Dark Mode, and customizable popup launcher. | Built |
+
+---
+
+## 9. Submission ZIP Package
+
+- **Package Location:** `build/chrome-mv3-prod.zip`
+- **Package Size:** ~970 KB (Well below 2GB / 10MB limit)
+- **Build Command:** `npm run package`
+- **Verification Command:** `npm run validate`

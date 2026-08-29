@@ -11,6 +11,7 @@ import { useTheme } from "./hooks/useTheme"
 import { SquareExtensionCard } from "./components/hub/SquareExtensionCard"
 import { ExtensionCatalogModal } from "./components/hub/ExtensionCatalogModal"
 import { YtMusicSettingsModal } from "./components/extensions/YtMusicSettingsModal"
+import { DarkModeSettingsModal } from "./components/extensions/DarkModeSettingsModal"
 import {
   ExtensionStorage,
   storage,
@@ -81,6 +82,7 @@ function IndexPopup() {
   } = useHubStore()
 
   const [isYtMusicModalOpen, setIsYtMusicModalOpen] = useState(false)
+  const [isDarkModeModalOpen, setIsDarkModeModalOpen] = useState(false)
   const { resolvedTheme, toggleTheme } = useTheme()
 
 
@@ -208,14 +210,7 @@ function IndexPopup() {
         }
         window.close()
       } else if (extensionId === "force-dark-mode") {
-        await toggleBackground("force-dark-mode")
-        const currentBg = await ExtensionStorage.getBackgroundEnabled()
-        if (tab?.id) {
-          await chrome.tabs.sendMessage(tab.id, {
-            type: "TOGGLE_DARK_MODE",
-            enabled: currentBg["force-dark-mode"]
-          }).catch(() => {})
-        }
+        setIsDarkModeModalOpen(true)
       } else if (extensionId === "yt-music-redirect") {
         setIsYtMusicModalOpen(true)
       } else {
@@ -249,6 +244,7 @@ function IndexPopup() {
             onClick={() => setIsCatalogOpen(true)}
             title="Search Extensions"
             aria-label="Search"
+            tooltipPosition="bottom"
           >
             <Search size={14} className="stroke-[2.2]" />
           </IconButton>
@@ -260,6 +256,7 @@ function IndexPopup() {
             onClick={toggleTheme}
             title={resolvedTheme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme"}
             aria-label="Toggle theme"
+            tooltipPosition="bottom-left"
           >
             {resolvedTheme === "dark" ? (
               <Sun size={14} className="stroke-[2.2]" />
@@ -308,6 +305,12 @@ function IndexPopup() {
       <YtMusicSettingsModal
         isOpen={isYtMusicModalOpen}
         onClose={() => setIsYtMusicModalOpen(false)}
+      />
+
+      {/* ── DARK/LIGHT MODE SETTINGS MODAL ── */}
+      <DarkModeSettingsModal
+        isOpen={isDarkModeModalOpen}
+        onClose={() => setIsDarkModeModalOpen(false)}
       />
     </div>
   )

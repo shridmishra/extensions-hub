@@ -9,29 +9,18 @@ export const config: PlasmoCSConfig = {
     "http://*.youtube.com/*",
     "http://youtube.com/*"
   ],
-  run_at: "document_start",
+  run_at: "document_idle",
   all_frames: false
 }
 
 const storage = new Storage({ area: "local" })
 
 const RIGHT_BTN_CLASS = "ytp-ytmusic-btn"
-const LEFT_BTN_CLASS = "ytp-ytmusic-left-btn"
 const ACTION_BAR_BTN_ID = "yt-action-bar-ytmusic-btn"
 const TOAST_ID = "ytmusic-redirect-toast"
+const STYLE_ID = "ytmusic-player-styles"
 
 let settings: YtMusicSettings = { ...DEFAULT_YT_MUSIC_SETTINGS }
-
-// Load settings asynchronously without blocking synchronous injection
-storage.get<YtMusicSettings>("hub_yt_music_settings").then((s) => {
-  if (s) settings = { ...DEFAULT_YT_MUSIC_SETTINGS, ...s }
-}).catch(() => {})
-
-storage.watch({
-  hub_yt_music_settings: (val: any) => {
-    if (val?.newValue) settings = { ...settings, ...val.newValue }
-  }
-})
 
 /**
  * Get current YouTube Video ID
@@ -134,7 +123,7 @@ function showToast(message: string) {
     backdrop-filter: blur(8px) !important;
   `
   toast.innerHTML = `
-    <span style="display:flex;align-items:center;justify-content:center;width:14px;height:14px;background:#ff0000;border-radius:50%;flex-shrink:0;">
+    <span style="display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1.5px solid #ffffff;">
       <svg width="8" height="8" viewBox="0 0 24 24" fill="#ffffff"><polygon points="6,3 20,12 6,21"/></svg>
     </span>
     <span>${message}</span>
@@ -179,173 +168,159 @@ function performRedirect(forceNewTab: boolean = false) {
     showToast("Opening in YouTube Music (New Tab)...")
     window.open(targetUrl, "_blank")
   } else {
-    showToast("Redirecting to YouTube Music...")
+    showToast("Opening in YouTube Music...")
     window.location.href = targetUrl
   }
 }
 
 /**
- * Create Player Controls Button Element
+ * Inject dedicated CSS styles for player controls button and tooltip
+ */
+function injectStyles() {
+  if (document.getElementById(STYLE_ID)) return
+
+  const styleEl = document.createElement("style")
+  styleEl.id = STYLE_ID
+  styleEl.textContent = `
+    .ytp-ytmusic-btn {
+      display: inline-block !important;
+      vertical-align: top !important;
+      width: 46px !important;
+      height: 100% !important;
+      cursor: pointer !important;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: transform 0.1s ease, opacity 0.1s ease !important;
+      position: relative !important;
+      opacity: 0.9 !important;
+    }
+
+    .ytp-ytmusic-btn:hover {
+      transform: scale(1.15) !important;
+      opacity: 1 !important;
+    }
+
+    .ytp-ytmusic-btn svg {
+      width: 20px !important;
+      height: 20px !important;
+      display: block !important;
+      pointer-events: none !important;
+      transition: transform 0.15s ease !important;
+    }
+
+    .ytp-ytmusic-btn:hover svg {
+      filter: brightness(1.15) !important;
+    }
+
+    /* YouTube Music Player Tooltip */
+    .ytp-ytmusic-btn::after {
+      content: "Switch to YouTube Music (Shift+M)";
+      position: absolute;
+      bottom: calc(100% + 15px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      color: #ffffff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      z-index: 2147483647;
+    }
+
+    .ytp-ytmusic-btn:hover::after {
+      opacity: 1;
+    }
+  `
+
+  if (document.head) {
+    document.head.appendChild(styleEl)
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      document.head.appendChild(styleEl)
+    })
+  }
+}
+
+/**
+ * Create Player Controls Button Element matching paths technique
  */
 function createTimelineButton(className: string): HTMLElement {
   const button = document.createElement("button")
   button.className = `ytp-button ${className}`
+  button.setAttribute("type", "button")
+  button.setAttribute("tabindex", "-1")
   button.setAttribute("aria-label", "Switch to YouTube Music (Shift+M)")
-  button.setAttribute("title", "Switch to YouTube Music (Shift+M)")
 
-  button.style.cssText = `
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 48px !important;
-    min-width: 40px !important;
-    height: 100% !important;
-    min-height: 36px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    background: transparent !important;
-    cursor: pointer !important;
-    vertical-align: top !important;
-    position: relative !important;
-    opacity: 0.9 !important;
-    transition: opacity 0.15s ease, transform 0.12s ease !important;
-    flex-shrink: 0 !important;
-    user-select: none !important;
-    z-index: 20 !important;
-  `
-
+  // Clean, minimal monochrome music note icon matching player controls
   button.innerHTML = `
-    <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%" style="display:block; pointer-events:none;">
-      <!-- Outer white ring -->
-      <path d="M18 4C10.27 4 4 10.27 4 18s6.27 14 14 14 14-6.27 14-14S25.73 4 18 4zm0 25.5c-6.34 0-11.5-5.16-11.5-11.5S11.66 6.5 18 6.5s11.5 5.16 11.5 11.5-5.16 11.5-11.5 11.5z" fill="#ffffff" opacity="0.95"></path>
-      <!-- Inner red disc -->
-      <circle cx="18" cy="18" r="8.5" fill="#ff0000"></circle>
-      <!-- Play triangle -->
-      <polygon points="16,13.5 22,18 16,22.5" fill="#ffffff"></polygon>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block; pointer-events:none;">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" fill="#ffffff" />
+      <circle cx="18" cy="16" r="3" fill="#ffffff" />
     </svg>
   `
-
-  button.addEventListener("mouseenter", () => {
-    button.style.opacity = "1"
-    button.style.transform = "scale(1.1)"
-  })
-
-  button.addEventListener("mouseleave", () => {
-    button.style.opacity = "0.9"
-    button.style.transform = "scale(1)"
-  })
 
   button.addEventListener("click", (e: MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    performRedirect(e.ctrlKey || e.metaKey || e.shiftKey)
+    // Default: Open in same tab directly (only open in new tab if ctrl/meta clicked)
+    const forceNewTab = e.ctrlKey || e.metaKey
+    performRedirect(forceNewTab)
   })
 
   return button
 }
 
 /**
- * Injects buttons into YouTube's DOM
+ * Injects buttons into YouTube's Player DOM
  */
 function checkAndInject() {
-  const moviePlayer = document.getElementById("movie_player") || document.querySelector(".html5-video-player")
+  injectStyles()
 
-  // 1. Right Controls (beside Settings and CC)
-  const rightControls = moviePlayer
-    ? moviePlayer.querySelector(".ytp-right-controls")
-    : document.querySelector(".ytp-right-controls")
+  // Clean up any legacy action bar button under video title if present
+  const existingActionBarBtn = document.getElementById(ACTION_BAR_BTN_ID)
+  if (existingActionBarBtn) existingActionBarBtn.remove()
 
+  if (!settings.enabled) {
+    const existingBtns = document.querySelectorAll(`.${RIGHT_BTN_CLASS}`)
+    existingBtns.forEach((btn) => btn.remove())
+    return
+  }
+
+  // Right Controls (beside Subtitles & Settings in the timeline)
+  const rightControls = document.querySelector(".ytp-right-controls")
   if (rightControls && !rightControls.querySelector(`.${RIGHT_BTN_CLASS}`)) {
     const btn = createTimelineButton(RIGHT_BTN_CLASS)
-    const settingsBtn = rightControls.querySelector(".ytp-settings-button")
     const subtitlesBtn = rightControls.querySelector(".ytp-subtitles-button")
-    const anchor = settingsBtn || subtitlesBtn || rightControls.firstChild
+    const settingsBtn = rightControls.querySelector(".ytp-settings-button")
 
-    if (anchor) {
-      rightControls.insertBefore(btn, anchor)
+    if (subtitlesBtn) {
+      subtitlesBtn.insertAdjacentElement("beforebegin", btn)
+    } else if (settingsBtn) {
+      settingsBtn.insertAdjacentElement("beforebegin", btn)
     } else {
       rightControls.appendChild(btn)
     }
   }
-
-  // 2. Left Controls (beside time display)
-  const leftControls = moviePlayer
-    ? moviePlayer.querySelector(".ytp-left-controls")
-    : document.querySelector(".ytp-left-controls")
-
-  if (leftControls && !leftControls.querySelector(`.${LEFT_BTN_CLASS}`)) {
-    const btn = createTimelineButton(LEFT_BTN_CLASS)
-    const timeDisplay = leftControls.querySelector(".ytp-time-display")
-
-    if (timeDisplay && timeDisplay.nextSibling) {
-      leftControls.insertBefore(btn, timeDisplay.nextSibling)
-    } else {
-      leftControls.appendChild(btn)
-    }
-  }
-
-  // 3. Action Bar under video title
-  if (window.location.pathname.includes("/watch")) {
-    const actionsMenu = document.querySelector(
-      "ytd-watch-metadata #actions #top-level-buttons-computed, #top-level-buttons-computed"
-    )
-
-    if (actionsMenu && !document.getElementById(ACTION_BAR_BTN_ID)) {
-      const actionBtn = document.createElement("div")
-      actionBtn.id = ACTION_BAR_BTN_ID
-      actionBtn.setAttribute("title", "Open in YouTube Music (Shift+M)")
-      actionBtn.style.cssText = `
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 6px !important;
-        height: 36px !important;
-        padding: 0 14px !important;
-        margin-right: 8px !important;
-        border-radius: 18px !important;
-        background: rgba(255, 255, 255, 0.12) !important;
-        color: var(--yt-spec-text-primary, #ffffff) !important;
-        font-family: "Roboto", -apple-system, sans-serif !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        cursor: pointer !important;
-        user-select: none !important;
-        transition: background 0.15s ease, transform 0.1s ease !important;
-        vertical-align: middle !important;
-      `
-
-      actionBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" style="display:inline-block; vertical-align:middle; flex-shrink:0;">
-          <circle cx="12" cy="12" r="9.5" fill="#ff0000" stroke="#ffffff" stroke-width="1.2" />
-          <polygon points="10,8 16,12 10,16" fill="#ffffff" />
-        </svg>
-        <span style="font-size:13px; font-weight:600; letter-spacing: -0.01em;">YT Music</span>
-      `
-
-      actionBtn.addEventListener("mouseenter", () => {
-        actionBtn.style.background = "rgba(255, 255, 255, 0.22)"
-      })
-
-      actionBtn.addEventListener("mouseleave", () => {
-        actionBtn.style.background = "rgba(255, 255, 255, 0.12)"
-      })
-
-      actionBtn.addEventListener("click", (e: MouseEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        performRedirect(e.ctrlKey || e.metaKey || e.shiftKey)
-      })
-
-      if (actionsMenu.firstChild) {
-        actionsMenu.insertBefore(actionBtn, actionsMenu.firstChild)
-      } else {
-        actionsMenu.appendChild(actionBtn)
-      }
-    }
-  }
 }
 
-// Intercept Shift+M on capture phase
+// Intercept Shift+M keyboard shortcut
 window.addEventListener(
   "keydown",
   (e: KeyboardEvent) => {
@@ -363,22 +338,77 @@ window.addEventListener(
   true
 )
 
-// Run continuously with lightweight interval
-setInterval(checkAndInject, 300)
+function init() {
+  injectStyles()
 
-window.addEventListener("yt-navigate-finish", checkAndInject)
-window.addEventListener("yt-page-data-updated", checkAndInject)
-window.addEventListener("DOMContentLoaded", checkAndInject)
-window.addEventListener("load", checkAndInject)
+  // Load initial settings
+  storage.get<YtMusicSettings>("hub_yt_music_settings").then((s) => {
+    if (s) {
+      settings = { ...DEFAULT_YT_MUSIC_SETTINGS, ...s }
+      checkAndInject()
+    }
+  }).catch(() => {})
 
-if (document.body) {
-  const observer = new MutationObserver(checkAndInject)
-  observer.observe(document.body, { childList: true, subtree: true })
-} else {
-  document.addEventListener("DOMContentLoaded", () => {
-    const observer = new MutationObserver(checkAndInject)
-    observer.observe(document.body, { childList: true, subtree: true })
+  // Listen to changes in settings
+  storage.watch({
+    hub_yt_music_settings: (val: any) => {
+      if (val?.newValue) {
+        settings = { ...settings, ...val.newValue }
+        checkAndInject()
+      }
+    },
+    hub_background_enabled: (val: any) => {
+      if (val?.newValue && typeof val.newValue["yt-music-redirect"] === "boolean") {
+        settings.enabled = val.newValue["yt-music-redirect"]
+        checkAndInject()
+      }
+    }
   })
+
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.hub_yt_music_settings?.newValue) {
+      settings = { ...settings, ...changes.hub_yt_music_settings.newValue }
+      checkAndInject()
+    }
+    if (changes.hub_background_enabled?.newValue) {
+      if (typeof changes.hub_background_enabled.newValue["yt-music-redirect"] === "boolean") {
+        settings.enabled = changes.hub_background_enabled.newValue["yt-music-redirect"]
+        checkAndInject()
+      }
+    }
+  })
+
+  // Hook YouTube SPA navigation events
+  window.addEventListener("yt-navigate-finish", () => {
+    setTimeout(checkAndInject, 100)
+    setTimeout(checkAndInject, 500)
+  })
+  window.addEventListener("yt-page-data-updated", () => {
+    setTimeout(checkAndInject, 100)
+    setTimeout(checkAndInject, 500)
+  })
+  window.addEventListener("spfdone", checkAndInject)
+  window.addEventListener("popstate", checkAndInject)
+  window.addEventListener("DOMContentLoaded", checkAndInject)
+  window.addEventListener("load", checkAndInject)
+
+  // Observe DOM changes on YouTube's player container
+  if (document.body) {
+    const observer = new MutationObserver(() => {
+      checkAndInject()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+  }
+
+  // Periodic heartbeat check
+  setInterval(checkAndInject, 1500)
+
+  // Initial trigger
+  checkAndInject()
 }
 
-checkAndInject()
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init)
+} else {
+  init()
+}

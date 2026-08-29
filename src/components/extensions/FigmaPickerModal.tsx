@@ -60,19 +60,18 @@ const FigmaPickerModal: React.FC<FigmaPickerModalProps> = ({
     <div
       style={{
         position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
+        bottom: "24px",
+        right: "24px",
         zIndex: 2147483647,
         width: "420px",
-        maxWidth: "calc(100vw - 32px)",
+        maxWidth: "calc(100vw - 48px)",
         maxHeight: "90vh"
       }}
       className={`hub-extension-root ${isDarkMode ? "dark" : ""} animate-scale-in text-neutral-900 dark:text-neutral-100 select-none flex flex-col`}
     >
       <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[86vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-900/40 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800/80 bg-neutral-50/70 dark:bg-neutral-900/40 shrink-0 rounded-t-2xl">
           <div className="flex items-center gap-2.5 min-w-0">
             <FigmaIcon size={20} className="shrink-0" />
             <div className="flex items-center gap-2 truncate">
@@ -92,6 +91,7 @@ const FigmaPickerModal: React.FC<FigmaPickerModalProps> = ({
             onClick={onClose}
             title="Close (Esc)"
             aria-label="Close"
+            tooltipPosition="bottom-left"
             className="shrink-0 h-8 w-8 rounded-lg"
           >
             <X size={16} className="stroke-[2.2]" />
@@ -146,7 +146,7 @@ const FigmaPickerModal: React.FC<FigmaPickerModalProps> = ({
               variant="primary"
               size="md"
               onClick={handleCopyAgain}
-              className="text-sm font-bold gap-2 h-9 w-full"
+              className="text-sm font-bold gap-2 h-9 w-full rounded-xl"
             >
               {copied ? (
                 <>
@@ -165,7 +165,7 @@ const FigmaPickerModal: React.FC<FigmaPickerModalProps> = ({
               variant="secondary"
               size="md"
               onClick={handleDownloadJSON}
-              className="text-sm font-bold gap-2 h-9 w-full"
+              className="text-sm font-bold gap-2 h-9 w-full rounded-xl"
             >
               <Download className="w-4 h-4" />
               <span>Export JSON</span>
@@ -174,7 +174,7 @@ const FigmaPickerModal: React.FC<FigmaPickerModalProps> = ({
         </div>
 
         {/* Footer: Balanced Dot Separators */}
-        <div className="px-4 py-2.5 bg-neutral-50/80 dark:bg-neutral-900/60 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
+        <div className="px-4 py-2.5 bg-neutral-50/80 dark:bg-neutral-900/60 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 shrink-0 rounded-b-2xl">
           <div className="flex items-center gap-1.5 font-medium">
             <span>Paste in Figma</span>
             <span>•</span>

@@ -88,9 +88,7 @@ export const SquareExtensionCard: React.FC<SquareExtensionCardProps> = ({
         <div
           className={cn(
             "w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 shadow-xs",
-            isBackground && isEnabled
-              ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
-              : "bg-neutral-100 dark:bg-neutral-850 text-neutral-900 dark:text-neutral-100 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-800"
+            "bg-neutral-100 dark:bg-neutral-850 text-neutral-900 dark:text-neutral-100 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-800"
           )}
         >
           <ExtensionIcon name={extension.icon} size={20} />
@@ -100,11 +98,6 @@ export const SquareExtensionCard: React.FC<SquareExtensionCardProps> = ({
           <span className="text-xs font-black text-neutral-900 dark:text-neutral-50 tracking-tight leading-snug line-clamp-1">
             {extension.shortName}
           </span>
-          {isBackground && (
-            <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 mt-0.5">
-              {isEnabled ? "Enabled" : "Disabled"}
-            </span>
-          )}
         </div>
       </div>
     </div>

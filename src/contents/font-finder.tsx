@@ -36,8 +36,8 @@ export const getStyle: PlasmoGetStyle = () => {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
-      width: 0 !important;
-      height: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
       z-index: 2147483647 !important;
       pointer-events: none !important;
     }

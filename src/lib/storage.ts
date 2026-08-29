@@ -1,12 +1,37 @@
 import { Storage } from "@plasmohq/storage"
-import { EXTENSION_REGISTRY } from "./registry"
+import { EXTENSION_REGISTRY } from "./registry.ts"
 
 export const storage = new Storage({ area: "local" })
+
+export type DarkPreset = "midnight" | "oled" | "slate" | "charcoal"
+export type LightPreset = "pure-white" | "warm-paper" | "cool-ice"
 
 export interface DarkModeSettings {
   mode: "dark" | "light"
   globalEnabled: boolean
+  darkPreset: DarkPreset
+  lightPreset: LightPreset
+  brightness: number
+  contrast: number
+  sepia: number
+  grayscale: number
+  preserveMedia: boolean
+  dimMediaInDark: boolean
   siteOverrides: Record<string, boolean>
+}
+
+export const DEFAULT_DARK_MODE_SETTINGS: DarkModeSettings = {
+  mode: "dark",
+  globalEnabled: false,
+  darkPreset: "midnight",
+  lightPreset: "pure-white",
+  brightness: 100,
+  contrast: 100,
+  sepia: 0,
+  grayscale: 0,
+  preserveMedia: true,
+  dimMediaInDark: false,
+  siteOverrides: {}
 }
 
 export interface ColorHistoryItem {
@@ -146,16 +171,15 @@ export const ExtensionStorage = {
   // Dark / Light Forcer Settings
   async getDarkModeSettings(): Promise<DarkModeSettings> {
     const saved = await storage.get<DarkModeSettings>("hub_dark_mode_settings")
-    if (saved) return saved
-    return {
-      mode: "dark",
-      globalEnabled: false,
-      siteOverrides: {}
-    }
+    if (saved) return { ...DEFAULT_DARK_MODE_SETTINGS, ...saved }
+    return DEFAULT_DARK_MODE_SETTINGS
   },
 
-  async setDarkModeSettings(settings: DarkModeSettings): Promise<void> {
-    await storage.set("hub_dark_mode_settings", settings)
+  async setDarkModeSettings(settings: Partial<DarkModeSettings>): Promise<DarkModeSettings> {
+    const current = await this.getDarkModeSettings()
+    const updated = { ...current, ...settings }
+    await storage.set("hub_dark_mode_settings", updated)
+    return updated
   },
 
   // Color Picker History
