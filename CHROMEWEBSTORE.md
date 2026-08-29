@@ -2,7 +2,7 @@
 
 > **Last Updated:** August 29, 2026  
 > **Extension Name:** Extension Hub: All-in-One Micro-Extension Suite  
-> **Version:** 1.1.0  
+> **Version:** 1.0.0  
 > **Category:** Productivity (Secondary: Developer Tools)  
 
 ---
@@ -87,7 +87,7 @@ Found a bug or have a suggestion for a new micro-extension?
 • Email: shridmishra00@gmail.com
 • GitHub: https://github.com/shridmishra/extension-hub
 
-Version 1.1.0 — Added YouTube to YouTube Music Switcher with timeline button, timestamp sync, and hotkey support.
+Version 1.0.0 — Initial official launch featuring YouTube Music Switcher, Font Finder Inspector, Pixel Color Picker, CSS & Tailwind Inspector, HTML to Figma Vector Importer, Smart Dark Mode Forcer, and custom launcher.
 ```
 
 ### Category [REQUIRED]
@@ -187,8 +187,7 @@ All required graphics are generated in high resolution inside the [`store-assets
 
 | Version | Date | Changes | Status |
 |---|---|---|---|
-| **1.1.0** | 2026-08-29 | Added YouTube to YouTube Music Switcher (timeline button, timestamp sync, shorts support, hotkey `Shift+M`), store promotional assets suite, updated privacy policy, and packaging validation. | **Ready for Submission** |
-| **1.0.0** | 2026-08-28 | Initial release of Extension Hub: Modular extension registry, Font Finder, Color Picker, CSS Picker, HTML to Figma Importer, Smart Dark Mode, and customizable popup launcher. | Built |
+| **1.0.0** | 2026-08-29 | Initial official Chrome Web Store launch: Modular extension registry, YouTube to YouTube Music Switcher, Font Finder, Color Picker, CSS Picker, HTML to Figma Importer, Smart Dark Mode, and customizable popup launcher. | **Ready for Submission** |
 
 ---
 
