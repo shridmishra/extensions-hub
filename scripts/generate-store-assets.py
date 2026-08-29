@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chrome Web Store Asset Generator for Extension Hub
+Chrome Web Store Asset Generator for Extensions Hub
 Generates:
 - Store Icon (128x128 PNG)
 - Small Promo Tile (440x280 PNG)
@@ -85,7 +85,7 @@ def create_small_promo_tile(output_path: str):
     draw.text((124, 45), "MICRO-EXTENSION SUITE", font=f_badge, fill=(180, 180, 195, 255))
 
     # Main Title
-    draw.text((116, 68), "Extension Hub", font=f_title, fill=(255, 255, 255, 255))
+    draw.text((116, 68), "Extensions Hub", font=f_title, fill=(255, 255, 255, 255))
 
     # Feature points
     features = [
@@ -142,7 +142,7 @@ def create_marquee_promo_tile(output_path: str):
     draw_rounded_card(draw, (244, 104, 460, 132), 6, (32, 32, 42, 255), outline=(65, 65, 80, 255), width=1)
     draw.text((256, 109), "ALL-IN-ONE EXTENSION SUITE", font=f_badge, fill=(220, 220, 235, 255))
 
-    draw.text((244, 142), "Extension Hub", font=f_title, fill=(255, 255, 255, 255))
+    draw.text((244, 142), "Extensions Hub", font=f_title, fill=(255, 255, 255, 255))
     draw.text((244, 194), "One high-performance extension. Dozens of micro-tools.", font=f_sub, fill=(170, 170, 185, 255))
 
     # Feature List
@@ -237,10 +237,10 @@ def create_screenshot_card(output_path: str, title: str, subtitle: str, badge: s
 
     # Render mockup contents based on preview_type
     if preview_type == "hub":
-        # Render Extension Hub popup interface preview
+        # Render Extensions Hub popup interface preview
         draw_rounded_card(draw, (550, 210, 1180, 710), 14, (20, 20, 25, 255), outline=(50, 50, 62, 255), width=1)
         # Hub header
-        draw.text((580, 235), "Extension Hub", font=get_font(20, "Bold"), fill=(255, 255, 255, 255))
+        draw.text((580, 235), "Extensions Hub", font=get_font(20, "Bold"), fill=(255, 255, 255, 255))
         draw.text((580, 265), "Modular Micro-Extension Launcher", font=get_font(12, "Regular"), fill=(150, 150, 165, 255))
 
         # Search bar
@@ -350,7 +350,7 @@ def main():
     # 4. Screenshot 1: Hub Catalog & Launcher (1280x800 PNG)
     create_screenshot_card(
         output_path=os.path.join(out_dir, "screenshot-1-hub-1280x800.png"),
-        title="Modular Extension Hub",
+        title="Modular Extensions Hub",
         subtitle="Curated suite of high-performance micro-extensions in one unified popup",
         badge="Unified Launcher",
         bullet_items=[
@@ -397,3 +397,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

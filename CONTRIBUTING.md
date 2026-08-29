@@ -1,6 +1,6 @@
-# Contributing to Extension Hub 🤝
+# Contributing to Extensions Hub 🤝
 
-Thank you for your interest in contributing to **Extension Hub**! Extension Hub is an open-source, modular micro-extension platform for Chromium browsers built with **Plasmo (Manifest V3)**, **React 18**, **TypeScript**, and **Tailwind CSS**.
+Thank you for your interest in contributing to **Extensions Hub**! Extensions Hub is an open-source, modular micro-extension platform for Chromium browsers built with **Plasmo (Manifest V3)**, **React 18**, **TypeScript**, and **Tailwind CSS**.
 
 We welcome contributions of all kinds: new micro-extensions, performance optimizations, bug fixes, accessibility improvements, and documentation updates.
 
@@ -28,8 +28,8 @@ We are committed to providing a welcoming, inclusive, and harassment-free enviro
 
 ### 1. Fork and Clone
 ```bash
-git clone https://github.com/YOUR_USERNAME/extension-hub.git
-cd extension-hub
+git clone https://github.com/YOUR_USERNAME/extensions-hub.git
+cd extensions-hub
 ```
 
 ### 2. Install Dependencies
@@ -46,8 +46,8 @@ npm run dev
 1. Open your browser and navigate to `chrome://extensions`.
 2. Toggle **Developer mode** in the top right corner.
 3. Click **Load unpacked**.
-4. Select the directory: `extension-hub/build/chrome-mv3-dev`.
-5. Pin **Extension Hub** in your browser toolbar.
+4. Select the directory: `extensions-hub/build/chrome-mv3-dev`.
+5. Pin **Extensions Hub** in your browser toolbar.
 
 ---
 

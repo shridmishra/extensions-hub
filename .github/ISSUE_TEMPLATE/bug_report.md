@@ -1,6 +1,6 @@
 ---
 name: "🐛 Bug Report"
-about: Create a report to help us improve Extension Hub
+about: Create a report to help us improve Extensions Hub
 title: "[Bug]: "
 labels: ["bug"]
 assignees: ""
@@ -13,7 +13,7 @@ assignees: ""
 <!-- e.g. Font Finder, Color Picker, YT Music Switcher, Hub Popup, etc. -->
 
 ### Steps to Reproduce
-1. Open Extension Hub popup (or navigate to target website)
+1. Open Extensions Hub popup (or navigate to target website)
 2. Click on '...'
 3. Perform action '...'
 4. See error
@@ -27,4 +27,4 @@ assignees: ""
 ### Environment
 - **Browser**: [e.g. Chrome 128, Brave 1.68, Edge 128]
 - **OS**: [e.g. macOS 14.5, Windows 11, Ubuntu 24.04]
-- **Extension Version**: [e.g. 1.1.0]
+- **Extension Version**: [e.g. 1.0.0]

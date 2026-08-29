@@ -1,6 +1,6 @@
 ---
 name: "💡 Feature Request"
-about: Suggest an idea or enhancement for Extension Hub core
+about: Suggest an idea or enhancement for Extensions Hub core
 title: "[Feature]: "
 labels: ["enhancement"]
 assignees: ""

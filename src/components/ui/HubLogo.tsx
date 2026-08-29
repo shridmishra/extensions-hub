@@ -8,7 +8,7 @@ interface HubLogoProps {
 }
 
 /**
- * 4-Petal Clover / Pinwheel Brand Logo for Extension Hub
+ * 4-Petal Clover / Pinwheel Brand Logo for Extensions Hub
  */
 export const HubLogo: React.FC<HubLogoProps> = ({
   size = 20,

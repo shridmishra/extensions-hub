@@ -1,8 +1,8 @@
 {
-  "name": "extension-hub",
-  "displayName": "Extension Hub: All-in-One Micro-Extension Suite",
+  "name": "extensions-hub",
+  "displayName": "Extensions Hub: All-in-One Micro-Extension Suite",
   "version": "1.0.0",
-  "description": "A modular extension launcher featuring YouTube Music Switcher, Font Finder, Color Picker, and Website Dark Mode Forcer.",
+  "description": "A modular extensions launcher featuring YouTube Music Switcher, Font Finder, Color Picker, and Website Dark Mode Forcer.",
   "author": "shridmishra <shridmishra00@gmail.com>",
   "scripts": {
     "dev": "plasmo dev",

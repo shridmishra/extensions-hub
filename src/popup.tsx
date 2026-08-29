@@ -232,7 +232,7 @@ function IndexPopup() {
             <HubLogo size={12} className="fill-white text-white" />
           </div>
           <span className="text-[14px] font-black text-neutral-900 dark:text-neutral-50 tracking-tight leading-none">
-            Extension Hub
+            Extensions Hub
           </span>
         </div>
 

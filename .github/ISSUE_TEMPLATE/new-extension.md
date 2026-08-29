@@ -1,6 +1,6 @@
 ---
 name: "🚀 New Micro-Extension Proposal"
-about: Propose a new micro-extension for Extension Hub
+about: Propose a new micro-extension for Extensions Hub
 title: "[Extension Proposal]: "
 labels: ["enhancement", "extension-proposal"]
 assignees: ""
@@ -22,7 +22,7 @@ assignees: ""
 - [ ] Utility
 
 ### Problem Statement / Use Case
-<!-- What problem does this extension solve? Why should it be part of Extension Hub? -->
+<!-- What problem does this extension solve? Why should it be part of Extensions Hub? -->
 
 ### Proposed Features & Functionality
 - Feature 1: ...

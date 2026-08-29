@@ -1,6 +1,6 @@
 # Versioning & Release Guidelines 🏷️
 
-Extension Hub strictly adheres to [Semantic Versioning 2.0.0](https://semver.org/) (`MAJOR.MINOR.PATCH`) for repository releases and Chrome Web Store deployments.
+Extensions Hub strictly adheres to [Semantic Versioning 2.0.0](https://semver.org/) (`MAJOR.MINOR.PATCH`) for repository releases and Chrome Web Store deployments.
 
 ---
 

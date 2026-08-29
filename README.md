@@ -1,8 +1,8 @@
-# Extension Hub 🚀
+# Extensions Hub 🚀
 
 An open-source, high-performance modular micro-extension suite for Chromium browsers, built with **Plasmo (Manifest V3)**, **React 18**, **TypeScript**, **Tailwind CSS**, and **Zustand**.
 
-Extension Hub turns your browser into an extensible powerhouse: host all your favorite developer utilities, inspectors, accessibility tools, and page modifiers in a single, lightweight browser extension.
+Extensions Hub turns your browser into an extensible powerhouse: host all your favorite developer utilities, inspectors, accessibility tools, and page modifiers in a single, lightweight browser extension.
 
 ---
 
@@ -10,7 +10,7 @@ Extension Hub turns your browser into an extensible powerhouse: host all your fa
 
 ```mermaid
 flowchart LR
-    subgraph HubShell ["Extension Hub Core"]
+    subgraph HubShell ["Extensions Hub Core"]
         Popup["Popup Shell\n(React + Zustand)"]
         Registry["Extension Registry\n(Type-Safe Catalog)"]
         Storage["Reactive Storage Sync\n(Chrome Local Storage)"]
@@ -37,7 +37,7 @@ flowchart LR
 
 ## 🛠️ Built-in Micro-Extensions
 
-Extension Hub comes preloaded with production-ready micro-extensions:
+Extensions Hub comes preloaded with production-ready micro-extensions:
 
 | # | Extension Name | Type | Category | Description |
 | :-: | :--- | :---: | :--- | :--- |

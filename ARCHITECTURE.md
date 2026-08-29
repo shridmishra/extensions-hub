@@ -1,12 +1,12 @@
-# Extension Hub Architecture & Technical Design 🏛️
+# Extensions Hub Architecture & Technical Design 🏛️
 
-This document outlines the architecture, data flow, and design patterns powering **Extension Hub**.
+This document outlines the architecture, data flow, and design patterns powering **Extensions Hub**.
 
 ---
 
 ## 🏗️ High-Level Overview
 
-Extension Hub is built on **Plasmo** (Manifest V3), **React 18**, **TypeScript**, **Zustand**, and **Tailwind CSS**. It serves as a unified shell that hosts, manages, and executes independent micro-extensions across Chromium browsers.
+Extensions Hub is built on **Plasmo** (Manifest V3), **React 18**, **TypeScript**, **Zustand**, and **Tailwind CSS**. It serves as a unified shell that hosts, manages, and executes independent micro-extensions across Chromium browsers.
 
 ```mermaid
 flowchart TB

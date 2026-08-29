@@ -1,7 +1,7 @@
-# Chrome Web Store Listing: Extension Hub
+# Chrome Web Store Listing: Extensions Hub
 
 > **Last Updated:** August 29, 2026  
-> **Extension Name:** Extension Hub: All-in-One Micro-Extension Suite  
+> **Extension Name:** Extensions Hub: All-in-One Micro-Extension Suite  
 > **Version:** 1.0.0  
 > **Category:** Productivity (Secondary: Developer Tools)  
 
@@ -11,21 +11,21 @@
 
 ### Extension Name [REQUIRED]
 ```
-Extension Hub: All-in-One Micro-Extension Suite
+Extensions Hub: All-in-One Micro-Extension Suite
 ```
-*(46 / 75 characters)*
+*(47 / 75 characters)*
 
 ### Short Description [REQUIRED]
 ```
-A modular extension launcher featuring YouTube Music Switcher, Font Finder, Color Picker, and Website Dark Mode Forcer.
+A modular extensions launcher featuring YouTube Music Switcher, Font Finder, Color Picker, and Website Dark Mode Forcer.
 ```
-*(122 / 132 characters)*
+*(123 / 132 characters)*
 
 ### Detailed Description [REQUIRED]
 *(Copy and paste the plain text below into the Chrome Web Store Developer Console. CWS does not render markdown headers, so clean line breaks and bullet characters `•` are used.)*
 
 ```
-Extension Hub is an all-in-one productivity suite and modular extension manager. Instead of installing dozens of separate browser extensions that clutter your toolbar and slow down your browser, Extension Hub hosts a curated collection of high-performance micro-extensions inside a single lightweight popup.
+Extensions Hub is an all-in-one productivity suite and modular extension manager. Instead of installing dozens of separate browser extensions that clutter your toolbar and slow down your browser, Extensions Hub hosts a curated collection of high-performance micro-extensions inside a single lightweight popup.
 
 FEATURES
 
@@ -63,7 +63,7 @@ FEATURES
 
 HOW TO USE
 
-1. Click the Extension Hub icon in your Chrome toolbar.
+1. Click the Extensions Hub icon in your Chrome toolbar.
 2. Launch any interactive micro-extension (Font Finder, Color Picker, CSS Inspector) by clicking its card or using its shortcut.
 3. On YouTube, look for the YouTube Music icon in the video player control bar (or press Shift+M) to jump straight to YouTube Music at the exact timestamp.
 4. Pin or reorder your favorite tools to customize your launcher.
@@ -71,7 +71,7 @@ HOW TO USE
 PRIVACY & PERMISSIONS
 
 • 100% Client-Side: All tools run completely offline inside your browser. No remote servers, no telemetry, and no third-party analytics.
-• Zero Data Collection: Extension Hub never collects, stores, or transmits your personal information or browsing history.
+• Zero Data Collection: Extensions Hub never collects, stores, or transmits your personal information or browsing history.
 • Local Storage Only: Preferences (pinned tools, saved palettes, dark mode toggles) are stored locally in your browser via chrome.storage.local.
 
 PERMISSIONS EXPLAINED
@@ -85,7 +85,7 @@ SUPPORT & FEEDBACK
 
 Found a bug or have a suggestion for a new micro-extension?
 • Email: shridmishra00@gmail.com
-• GitHub: https://github.com/shridmishra/extension-hub
+• GitHub: https://github.com/shridmishra/extensions-hub
 
 Version 1.0.0 — Initial official launch featuring YouTube Music Switcher, Font Finder Inspector, Pixel Color Picker, CSS & Tailwind Inspector, HTML to Figma Vector Importer, Smart Dark Mode Forcer, and custom launcher.
 ```
@@ -161,7 +161,7 @@ All required graphics are generated in high resolution inside the [`store-assets
 ## 5. Privacy Policy
 
 - **Privacy Policy File:** [`PRIVACY.md`](file:///Users/shrid/Repos/projects/extension-hub/PRIVACY.md)
-- **Privacy Policy URL:** `https://github.com/shridmishra/extension-hub/blob/main/PRIVACY.md` *(or your hosted GitHub Pages / website link)*
+- **Privacy Policy URL:** `https://github.com/shridmishra/extensions-hub/blob/main/PRIVACY.md`
 
 ---
 
@@ -178,8 +178,8 @@ All required graphics are generated in high resolution inside the [`store-assets
 
 - **Publisher / Developer Name:** Shridhar Mishra
 - **Contact Email:** `shridmishra00@gmail.com`
-- **Support URL:** `https://github.com/shridmishra/extension-hub/issues`
-- **Homepage URL:** `https://github.com/shridmishra/extension-hub`
+- **Support URL:** `https://github.com/shridmishra/extensions-hub/issues`
+- **Homepage URL:** `https://github.com/shridmishra/extensions-hub`
 
 ---
 

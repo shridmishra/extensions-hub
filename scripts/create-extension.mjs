@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Extension Hub - Micro-Extension Scaffolding CLI
+ * Extensions Hub - Micro-Extension Scaffolding CLI
  *
  * Usage:
  *   node scripts/create-extension.mjs
