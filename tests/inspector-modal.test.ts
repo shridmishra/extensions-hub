@@ -44,4 +44,23 @@ describe("InspectorModal UI Component & Extension Modals Verification", () => {
     assert.ok(!content.includes("Paste in Figma"), "FigmaPickerModal should not contain redundant footer text")
     assert.ok(!content.includes("Esc to close"), "FigmaPickerModal should not contain redundant footer text")
   })
+
+  it("should support draggable header and movable positioning", () => {
+    const filePath = path.join(UI_DIR, "InspectorModal.tsx")
+    const content = fs.readFileSync(filePath, "utf8")
+    assert.ok(content.includes("handleHeaderPointerDown"), "InspectorModal should have header pointer down handler for dragging")
+    assert.ok(content.includes("cursor-grab") || content.includes("cursor-grabbing"), "InspectorModal header should have grab cursor styles")
+    assert.ok(content.includes("GripHorizontal"), "InspectorModal should have drag grip icon affordance")
+  })
+
+  it("should support diagonal-only corner resizing without horizontal or vertical edge handles", () => {
+    const filePath = path.join(UI_DIR, "InspectorModal.tsx")
+    const content = fs.readFileSync(filePath, "utf8")
+    assert.ok(content.includes("cursor-nwse-resize"), "InspectorModal should support diagonal nwse resize cursor")
+    assert.ok(content.includes("cursor-nesw-resize"), "InspectorModal should support diagonal nesw resize cursor")
+    assert.ok(content.includes("handleResizePointerDown"), "InspectorModal should have corner resize handler")
+    assert.ok(!content.includes("cursor-ew-resize") && !content.includes("cursor-w-resize") && !content.includes("cursor-e-resize"), "InspectorModal should not have horizontal-only resize handles")
+    assert.ok(!content.includes("cursor-ns-resize") && !content.includes("cursor-n-resize") && !content.includes("cursor-s-resize"), "InspectorModal should not have vertical-only resize handles")
+  })
 })
+

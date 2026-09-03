@@ -1,6 +1,6 @@
 import { create } from "zustand"
-import { EXTENSION_REGISTRY, filterAndSortExtensions } from "../lib/registry"
-import { ExtensionStorage } from "../lib/storage"
+import { EXTENSION_REGISTRY, filterAndSortExtensions } from "../lib/registry.ts"
+import { ExtensionStorage } from "../lib/storage.ts"
 import type { ExtensionManifestItem, CatalogSortBy } from "../types/registry"
 
 export type SortOption = CatalogSortBy
@@ -20,6 +20,8 @@ interface HubStoreState {
   // Actions
   loadAllState: () => Promise<void>
   togglePin: (id: string) => Promise<void>
+  setPinnedIds: (ids: string[]) => Promise<void>
+  reorderPinned: (source: string | number, target: string | number) => Promise<void>
   toggleStar: (id: string) => Promise<void>
   toggleLike: (id: string) => Promise<void>
   toggleBackground: (id: string) => Promise<void>
@@ -63,6 +65,44 @@ export const useHubStore = create<HubStoreState>((set, get) => ({
   togglePin: async (id: string) => {
     const nextPinned = await ExtensionStorage.togglePin(id)
     set({ pinnedIds: nextPinned })
+  },
+
+  setPinnedIds: async (ids: string[]) => {
+    set({ pinnedIds: ids })
+    await ExtensionStorage.setPinnedIds(ids)
+  },
+
+  reorderPinned: async (source: string | number, target: string | number) => {
+    const { pinnedIds } = get()
+    let fromIdx: number
+    let toIdx: number
+
+    if (typeof source === "number" && typeof target === "number") {
+      fromIdx = source
+      toIdx = target
+    } else {
+      const sourceId = String(source)
+      const targetId = String(target)
+      fromIdx = pinnedIds.indexOf(sourceId)
+      toIdx = pinnedIds.indexOf(targetId)
+    }
+
+    if (
+      fromIdx === -1 ||
+      toIdx === -1 ||
+      fromIdx === toIdx ||
+      fromIdx < 0 ||
+      toIdx < 0 ||
+      fromIdx >= pinnedIds.length ||
+      toIdx >= pinnedIds.length
+    ) {
+      return
+    }
+    const updated = [...pinnedIds]
+    const [removed] = updated.splice(fromIdx, 1)
+    updated.splice(toIdx, 0, removed)
+    set({ pinnedIds: updated })
+    await ExtensionStorage.setPinnedIds(updated)
   },
 
   toggleStar: async (id: string) => {

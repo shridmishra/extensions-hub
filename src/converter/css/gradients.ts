@@ -6,13 +6,33 @@ import type {
 import { parseCssColor } from "./color"
 
 /**
+ * Resolves all CSS var(...) references in a string using document/body computed styles
+ */
+export function resolveCssVariablesInString(str: string): string {
+  if (!str || !str.includes("var(") || typeof document === "undefined") return str
+  return str.replace(/var\(\s*(--[a-zA-Z0-9_-]+)(?:\s*,\s*([^)]+))?\s*\)/g, (_, varName, fallback) => {
+    try {
+      const docEl = document.documentElement
+      const val =
+        window.getComputedStyle(docEl).getPropertyValue(varName)?.trim() ||
+        (document.body ? window.getComputedStyle(document.body).getPropertyValue(varName)?.trim() : "")
+      if (val) return val
+    } catch {}
+    return fallback ? fallback.trim() : ""
+  })
+}
+
+/**
  * Parses any CSS linear-gradient(...) or radial-gradient(...) string into an IR gradient fill.
  */
 export function parseCssGradient(
   gradientStr: string
 ): IRGradientLinearFill | IRGradientRadialFill | null {
   if (!gradientStr) return null
-  const str = gradientStr.trim()
+  let str = gradientStr.trim()
+  if (str.includes("var(")) {
+    str = resolveCssVariablesInString(str)
+  }
 
   const allGradients = extractGradientStrings(str)
   if (allGradients.length > 0) {
@@ -63,7 +83,10 @@ export function extractGradientStrings(cssString: string): string[] {
 function parseSingleGradient(
   raw: string
 ): IRGradientLinearFill | IRGradientRadialFill | null {
-  const str = raw.trim()
+  let str = raw.trim()
+  if (str.includes("var(")) {
+    str = resolveCssVariablesInString(str)
+  }
 
   if (str.includes("linear-gradient(")) {
     return parseLinearGradient(str)
@@ -163,7 +186,7 @@ function parseRadialGradient(raw: string): IRGradientRadialFill | null {
   }
 }
 
-function parseConicGradient(raw: string): IRGradientRadialFill | null {
+function parseConicGradient(raw: string): IRGradientLinearFill | IRGradientRadialFill | null {
   const openParen = raw.indexOf("(")
   const closeParen = raw.lastIndexOf(")")
   if (openParen === -1 || closeParen <= openParen) return null
@@ -194,6 +217,33 @@ function parseConicGradient(raw: string): IRGradientRadialFill | null {
       stops.push({ position: 1, color: stops[0].color })
     } else {
       return null
+    }
+  }
+
+  // Detect symmetrical / multi-lobe conic gradients (e.g. radar hub)
+  // where stops at ~0 and ~0.5 (180deg) have prominent primary colors.
+  const hasOppositeLobe = stops.some((s) => Math.abs(s.position - 0.5) < 0.08)
+  if (hasOppositeLobe && stops.length >= 4) {
+    // Map the 0..0.5 half-circle sweep to a clean 0..1 top-to-bottom linear gradient
+    const firstHalfStops = stops.filter((s) => s.position <= 0.55)
+    if (firstHalfStops.length >= 2) {
+      const linearStops: IRGradientStop[] = firstHalfStops.map((s) => ({
+        position: Math.min(1, Math.max(0, Math.round(s.position * 2 * 1000) / 1000)),
+        color: s.color
+      }))
+      if (linearStops[0].position > 0) {
+        linearStops.unshift({ position: 0, color: linearStops[0].color })
+      }
+      if (linearStops[linearStops.length - 1].position < 1) {
+        const lastColor = stops.find((s) => Math.abs(s.position - 0.5) < 0.08)?.color || linearStops[linearStops.length - 1].color
+        linearStops.push({ position: 1, color: lastColor })
+      }
+      return {
+        type: "GRADIENT_LINEAR",
+        gradientStops: linearStops,
+        gradientTransform: [0, 1, 0, 0, 0, 0], // x1=0%, y1=0%, x2=0%, y2=100% (top to bottom)
+        visible: true
+      }
     }
   }
 
@@ -272,11 +322,41 @@ function parseCoord(token: string, defaultVal: number): number {
   return isNaN(num) ? defaultVal : num
 }
 
+function parseStopPosition(posStr: string | undefined): number | undefined {
+  if (!posStr) return undefined
+  const s = posStr.trim().toLowerCase()
+  if (s.endsWith("%")) {
+    const val = parseFloat(s)
+    return isNaN(val) ? undefined : Math.min(1, Math.max(0, val / 100))
+  }
+  if (s.endsWith("deg")) {
+    const deg = parseFloat(s)
+    if (isNaN(deg)) return undefined
+    return Math.min(1, Math.max(0, deg / 360))
+  }
+  if (s.endsWith("turn")) {
+    const turn = parseFloat(s)
+    if (isNaN(turn)) return undefined
+    return Math.min(1, Math.max(0, turn))
+  }
+  if (s.endsWith("rad")) {
+    const rad = parseFloat(s)
+    if (isNaN(rad)) return undefined
+    return Math.min(1, Math.max(0, (rad * 180 / Math.PI) / 360))
+  }
+  if (s.endsWith("grad")) {
+    const grad = parseFloat(s)
+    if (isNaN(grad)) return undefined
+    return Math.min(1, Math.max(0, grad / 400))
+  }
+  return undefined
+}
+
 function parseStops(stopStrings: string[]): IRGradientStop[] {
   const validStopStrings = stopStrings.filter((s) => {
     const t = s.trim().toLowerCase()
     if (t.startsWith("in ") || t === "oklab" || t === "oklch" || t === "srgb") return false
-    if (/^-?\d+(?:\.\d+)?(%|px)$/.test(t)) return false
+    if (/^-?\d+(?:\.\d+)?(%|px|deg|turn|rad|grad)$/i.test(t)) return false
     return true
   })
 
@@ -287,7 +367,7 @@ function parseStops(stopStrings: string[]): IRGradientStop[] {
     if (!trimmed) continue
 
     const posMatch = trimmed.match(
-      /\s+(-?\d+(?:\.\d+)?%|-?\d+(?:\.\d+)?px)(?:\s+(-?\d+(?:\.\d+)?%|-?\d+(?:\.\d+)?px))?$/
+      /\s+(-?\d+(?:\.\d+)?(?:%|px|deg|turn|rad|grad))(?:\s+(-?\d+(?:\.\d+)?(?:%|px|deg|turn|rad|grad)))?$/i
     )
 
     if (posMatch && posMatch.index !== undefined) {
@@ -295,11 +375,11 @@ function parseStops(stopStrings: string[]): IRGradientStop[] {
       const pos1Str = posMatch[1]
       const pos2Str = posMatch[2]
 
-      const pos1 = pos1Str.endsWith("%") ? parseFloat(pos1Str) / 100 : undefined
+      const pos1 = parseStopPosition(pos1Str)
       rawStops.push({ colorStr: colorPart, pos: pos1 })
 
       if (pos2Str) {
-        const pos2 = pos2Str.endsWith("%") ? parseFloat(pos2Str) / 100 : undefined
+        const pos2 = parseStopPosition(pos2Str)
         rawStops.push({ colorStr: colorPart, pos: pos2 })
       }
     } else {

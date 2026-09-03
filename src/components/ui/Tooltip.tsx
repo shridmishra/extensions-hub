@@ -225,45 +225,29 @@ const Tooltip: React.FC<TooltipProps> = ({
       className="inline-flex"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={handleDismiss}
-      onMouseDown={handleDismiss}
     >
       {children}
       {isVisible &&
         portalTarget &&
         createPortal(
           <div
-            className={cn(
-              "hub-extension-root font-sans select-none pointer-events-none",
-              isDarkMode ? "dark" : ""
-            )}
+            ref={tooltipRef}
+            role="tooltip"
             style={{
               position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
               zIndex: 2147483647,
               pointerEvents: "none"
             }}
+            className={cn(
+              "font-sans select-none pointer-events-none px-2.5 py-1.5 text-[10px] font-medium rounded-lg max-w-[240px] w-max whitespace-normal break-words leading-tight shadow-xl animate-scale-in text-left",
+              "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900",
+              isDarkMode ? "dark" : "",
+              className
+            )}
           >
-            <div
-              ref={tooltipRef}
-              role="tooltip"
-              style={{
-                position: "fixed",
-                top: `${coords.top}px`,
-                left: `${coords.left}px`,
-                zIndex: 2147483647
-              }}
-              className={cn(
-                "px-2.5 py-1.5 text-[10px] font-medium rounded-lg max-w-[240px] w-max whitespace-normal break-words leading-tight pointer-events-none shadow-xl animate-scale-in text-left",
-                "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900",
-                className
-              )}
-            >
-              {content}
-            </div>
+            {content}
           </div>,
           portalTarget
         )}
@@ -272,3 +256,4 @@ const Tooltip: React.FC<TooltipProps> = ({
 }
 
 export default Tooltip
+

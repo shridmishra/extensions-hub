@@ -286,6 +286,297 @@ function buildGitHubLightCSS(settings: DarkModeSettings): string {
   `
 }
 
+function buildTwitterDarkCSS(settings: DarkModeSettings): string {
+  const preset = DARK_PRESETS[settings.darkPreset] || DARK_PRESETS.midnight
+  const brightness = (settings.brightness ?? 100) / 100
+  const contrast = (settings.contrast ?? 100) / 100
+  const sepia = (settings.sepia ?? 0) / 100
+  const grayscale = (settings.grayscale ?? 0) / 100
+
+  const filterAdjustments = `brightness(${brightness}) contrast(${contrast}) ${sepia > 0 ? `sepia(${sepia})` : ""} ${grayscale > 0 ? `grayscale(${grayscale})` : ""}`.trim()
+  const mediaDimming = settings.dimMediaInDark ? "opacity: 0.85 !important;" : ""
+
+  return `
+    :root, html, body, #react-root {
+      background-color: ${preset.bg} !important;
+      color: ${preset.text} !important;
+      color-scheme: dark !important;
+    }
+
+    html {
+      filter: ${filterAdjustments} !important;
+    }
+
+    /* Left Navigation Sidebar */
+    header[role="banner"],
+    header[role="banner"] > div,
+    header[role="banner"] nav,
+    header[role="banner"] nav a,
+    header[role="banner"] nav div {
+      background-color: ${preset.bg} !important;
+      border-color: ${preset.border} !important;
+    }
+
+    header[role="banner"] nav a,
+    header[role="banner"] nav span,
+    header[role="banner"] svg {
+      color: ${preset.text} !important;
+      fill: ${preset.text} !important;
+    }
+
+    header[role="banner"] a[href="/home"] svg,
+    header[role="banner"] a[aria-label="X"] svg {
+      fill: ${preset.text} !important;
+      color: ${preset.text} !important;
+    }
+
+    /* Main Timeline & Column Containers */
+    [data-testid="primaryColumn"],
+    [data-testid="sidebarColumn"],
+    main[role="main"],
+    div[data-testid="cellInnerDiv"],
+    article[data-testid="tweet"] {
+      background-color: ${preset.bg} !important;
+      border-color: ${preset.border} !important;
+    }
+
+    /* Top Sticky Navigation Bar ("For you", "Following", Tabs) */
+    div[data-testid="TopNavBar"],
+    [role="tablist"],
+    div[style*="position: sticky"],
+    [data-testid="primaryColumn"] > div:first-child {
+      background-color: ${preset.bg} !important;
+      border-bottom: 1px solid ${preset.border} !important;
+    }
+
+    [role="tablist"] [role="tab"] {
+      color: #a1a1aa !important;
+    }
+
+    [role="tablist"] [role="tab"][aria-selected="true"],
+    [role="tablist"] [role="tab"][aria-selected="true"] * {
+      color: ${preset.text} !important;
+      font-weight: 700 !important;
+    }
+
+    /* Tweet Typography */
+    [data-testid="tweetText"],
+    [data-testid="tweetText"] *,
+    [data-testid="User-Name"] a,
+    [data-testid="User-Name"] span:first-child {
+      color: ${preset.text} !important;
+    }
+
+    [data-testid="User-Name"] span:last-child,
+    time {
+      color: #a1a1aa !important;
+    }
+
+    /* Tweet Interactive Actions (Reply, Retweet, Like, Bookmark) */
+    [data-testid="reply"],
+    [data-testid="retweet"],
+    [data-testid="like"],
+    [data-testid="bookmark"],
+    [role="group"] button {
+      color: #a1a1aa !important;
+    }
+
+    /* Right Sidebar Cards & Containers */
+    [data-testid="sidebarColumn"] section,
+    aside[aria-label],
+    [data-testid="trend"],
+    [data-testid="UserCell"],
+    [data-testid="card.wrapper"] {
+      background-color: ${preset.surface} !important;
+      border-color: ${preset.border} !important;
+    }
+
+    [data-testid="sidebarColumn"] section h2,
+    [data-testid="sidebarColumn"] section h1,
+    aside[aria-label] h2 {
+      color: ${preset.text} !important;
+    }
+
+    /* Search Box */
+    [data-testid="SearchBox_Search_Input"],
+    form[role="search"] > div {
+      background-color: ${preset.surface} !important;
+      color: ${preset.text} !important;
+      border: 1px solid ${preset.border} !important;
+    }
+
+    /* Modals & Dialogs */
+    [role="dialog"],
+    [data-testid="sheetDialog"],
+    [data-testid="HoverCard"] {
+      background-color: ${preset.surface} !important;
+      border: 1px solid ${preset.border} !important;
+      color: ${preset.text} !important;
+    }
+
+    /* Media Protection & Dimming */
+    [data-testid="tweetPhoto"],
+    [data-testid="tweetPhoto"] img,
+    [data-testid="tweetPhoto"] div,
+    [data-testid="videoPlayer"],
+    [data-testid="videoComponent"],
+    [data-testid="tweetPhoto"] [style*="background-image"],
+    img,
+    video {
+      filter: none !important;
+      ${mediaDimming}
+    }
+  `
+}
+
+function buildTwitterLightCSS(settings: DarkModeSettings): string {
+  const preset = LIGHT_PRESETS[settings.lightPreset] || LIGHT_PRESETS["pure-white"]
+  const brightness = (settings.brightness ?? 100) / 100
+  const contrast = (settings.contrast ?? 100) / 100
+  const sepia = (settings.sepia ?? 0) / 100
+  const grayscale = (settings.grayscale ?? 0) / 100
+
+  let presetFilter = ""
+  if (settings.lightPreset === "warm-paper" && sepia === 0) {
+    presetFilter = "sepia(0.08) "
+  } else if (settings.lightPreset === "cool-ice" && sepia === 0) {
+    presetFilter = "contrast(1.02) "
+  }
+
+  const filterAdjustments = `${presetFilter}brightness(${brightness}) contrast(${contrast}) ${sepia > 0 ? `sepia(${sepia})` : ""} ${grayscale > 0 ? `grayscale(${grayscale})` : ""}`.trim()
+
+  return `
+    :root, html, body, #react-root {
+      background-color: ${preset.bg} !important;
+      color: ${preset.text} !important;
+      color-scheme: light !important;
+    }
+
+    html {
+      filter: ${filterAdjustments} !important;
+    }
+
+    /* Left Navigation Sidebar */
+    header[role="banner"],
+    header[role="banner"] > div,
+    header[role="banner"] nav,
+    header[role="banner"] nav a,
+    header[role="banner"] nav div {
+      background-color: ${preset.bg} !important;
+      border-color: ${preset.border} !important;
+    }
+
+    header[role="banner"] nav a,
+    header[role="banner"] nav span,
+    header[role="banner"] svg {
+      color: ${preset.text} !important;
+      fill: ${preset.text} !important;
+    }
+
+    header[role="banner"] a[href="/home"] svg,
+    header[role="banner"] a[aria-label="X"] svg {
+      fill: ${preset.text} !important;
+      color: ${preset.text} !important;
+    }
+
+    /* Main Timeline & Column Containers */
+    [data-testid="primaryColumn"],
+    [data-testid="sidebarColumn"],
+    main[role="main"],
+    div[data-testid="cellInnerDiv"],
+    article[data-testid="tweet"] {
+      background-color: ${preset.bg} !important;
+      border-color: ${preset.border} !important;
+    }
+
+    /* Top Sticky Navigation Bar ("For you", "Following", Tabs) */
+    div[data-testid="TopNavBar"],
+    [role="tablist"],
+    div[style*="position: sticky"],
+    [data-testid="primaryColumn"] > div:first-child {
+      background-color: ${preset.bg} !important;
+      border-bottom: 1px solid ${preset.border} !important;
+    }
+
+    [role="tablist"] [role="tab"] {
+      color: #536471 !important;
+    }
+
+    [role="tablist"] [role="tab"][aria-selected="true"],
+    [role="tablist"] [role="tab"][aria-selected="true"] * {
+      color: ${preset.text} !important;
+      font-weight: 700 !important;
+    }
+
+    /* Tweet Typography */
+    [data-testid="tweetText"],
+    [data-testid="tweetText"] *,
+    [data-testid="User-Name"] a,
+    [data-testid="User-Name"] span:first-child {
+      color: ${preset.text} !important;
+    }
+
+    [data-testid="User-Name"] span:last-child,
+    time {
+      color: #536471 !important;
+    }
+
+    /* Tweet Interactive Actions (Reply, Retweet, Like, Bookmark) */
+    [data-testid="reply"],
+    [data-testid="retweet"],
+    [data-testid="like"],
+    [data-testid="bookmark"],
+    [role="group"] button {
+      color: #536471 !important;
+    }
+
+    /* Right Sidebar Cards & Containers */
+    [data-testid="sidebarColumn"] section,
+    aside[aria-label],
+    [data-testid="trend"],
+    [data-testid="UserCell"],
+    [data-testid="card.wrapper"] {
+      background-color: ${preset.surface} !important;
+      border-color: ${preset.border} !important;
+    }
+
+    [data-testid="sidebarColumn"] section h2,
+    [data-testid="sidebarColumn"] section h1,
+    aside[aria-label] h2 {
+      color: ${preset.text} !important;
+    }
+
+    /* Search Box */
+    [data-testid="SearchBox_Search_Input"],
+    form[role="search"] > div {
+      background-color: ${preset.surface} !important;
+      color: ${preset.text} !important;
+      border: 1px solid ${preset.border} !important;
+    }
+
+    /* Modals & Dialogs */
+    [role="dialog"],
+    [data-testid="sheetDialog"],
+    [data-testid="HoverCard"] {
+      background-color: ${preset.surface} !important;
+      border: 1px solid ${preset.border} !important;
+      color: ${preset.text} !important;
+    }
+
+    /* Media Protection */
+    [data-testid="tweetPhoto"],
+    [data-testid="tweetPhoto"] img,
+    [data-testid="tweetPhoto"] div,
+    [data-testid="videoPlayer"],
+    [data-testid="videoComponent"],
+    [data-testid="tweetPhoto"] [style*="background-image"],
+    img,
+    video {
+      filter: none !important;
+    }
+  `
+}
+
 function buildDarkCSS(settings: DarkModeSettings, isYouTube: boolean): string {
   const preset = DARK_PRESETS[settings.darkPreset] || DARK_PRESETS.midnight
   const brightness = (settings.brightness ?? 100) / 100
@@ -306,7 +597,6 @@ function buildDarkCSS(settings: DarkModeSettings, isYouTube: boolean): string {
       iframe:not(.hub-invertible),
       embed, 
       object, 
-      svg[role="img"],
       [data-hub-media] {
         filter: invert(1) hue-rotate(180deg) !important;
         ${mediaDimming}
@@ -404,7 +694,6 @@ function buildDarkCSS(settings: DarkModeSettings, isYouTube: boolean): string {
 
     html {
       filter: invert(1) hue-rotate(180deg) ${filterAdjustments} !important;
-      background-color: ${preset.bg} !important;
     }
 
     body {
@@ -464,7 +753,6 @@ function buildLightCSS(settings: DarkModeSettings, isYouTube: boolean): string {
       iframe:not(.hub-invertible),
       embed, 
       object, 
-      svg[role="img"],
       [data-hub-media] {
         filter: invert(1) hue-rotate(180deg) !important;
       }
@@ -483,7 +771,6 @@ function buildLightCSS(settings: DarkModeSettings, isYouTube: boolean): string {
 
     html {
       filter: invert(1) hue-rotate(180deg) ${filterAdjustments} !important;
-      background-color: ${preset.bg} !important;
     }
 
     body {
@@ -616,6 +903,16 @@ export function detectNativePageTheme(): "dark" | "light" {
       if (htmlStyle.includes("color-scheme: light") || html.style.colorScheme === "light") {
         return "light"
       }
+      const themeColor = document.querySelector('meta[name="theme-color"]')?.getAttribute("content")
+      if (themeColor) {
+        const lum = parseColorLuminance(themeColor)
+        if (lum !== null) return lum < 128 ? "dark" : "light"
+      }
+      if (body) {
+        const bodyBg = window.getComputedStyle(body).backgroundColor
+        const bodyLum = parseColorLuminance(bodyBg)
+        if (bodyLum !== null) return bodyLum < 128 ? "dark" : "light"
+      }
     }
 
     // 2. Common class markers on html or body
@@ -693,6 +990,7 @@ function applyTheme(enabled: boolean, settings: DarkModeSettings) {
   const hostname = window.location.hostname
   const isYouTube = hostname.includes("youtube.com")
   const isGitHub = hostname.includes("github.com")
+  const isTwitter = hostname.includes("twitter.com") || hostname.includes("x.com")
 
   if (!enabled) {
     if (styleEl) {
@@ -751,6 +1049,8 @@ function applyTheme(enabled: boolean, settings: DarkModeSettings) {
   let generatedCSS = ""
   if (isGitHub) {
     generatedCSS = targetMode === "dark" ? buildGitHubDarkCSS(settings) : buildGitHubLightCSS(settings)
+  } else if (isTwitter) {
+    generatedCSS = targetMode === "dark" ? buildTwitterDarkCSS(settings) : buildTwitterLightCSS(settings)
   } else {
     generatedCSS =
       targetMode === "dark"

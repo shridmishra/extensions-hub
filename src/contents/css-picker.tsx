@@ -5,10 +5,7 @@ import React, { useEffect, useState, useRef } from "react"
 import { Storage } from "@plasmohq/storage"
 import { extractStyles, type ExtractedStyles } from "../lib/css-extractor"
 import CssInspectorModal from "../components/extensions/CssInspectorModal"
-import FigmaIslandToolbar, { type ToolbarMode, type CapturedItem } from "../components/extensions/FigmaIslandToolbar"
-import { convertElementToIRAsync, convertDocumentToIRAsync, copyDirectToFigmaClipboard } from "../converter"
-import FigmaPickerModal from "../components/extensions/FigmaPickerModal"
-import type { IRDocument } from "../types/ir"
+import CssIslandToolbar, { type CssToolbarMode } from "../components/extensions/CssIslandToolbar"
 import { copyToClipboard } from "../lib/utils"
 
 export const config: PlasmoCSConfig = {
@@ -63,13 +60,10 @@ const storage = new Storage({ area: "local" })
 
 export default function CssPickerContentScript() {
   const [isActive, setIsActive] = useState<boolean>(false)
-  const [currentMode, setCurrentMode] = useState<ToolbarMode>("inspect-css")
+  const [currentMode, setCurrentMode] = useState<CssToolbarMode>("inspect-element")
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null)
   const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null)
   const [inspectedStyles, setInspectedStyles] = useState<ExtractedStyles | null>(null)
-  const [capturedDoc, setCapturedDoc] = useState<IRDocument | null>(null)
-  const [capturedItems, setCapturedItems] = useState<CapturedItem[]>([])
-  const [isCapturingPage, setIsCapturingPage] = useState<boolean>(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
 
@@ -89,7 +83,6 @@ export default function CssPickerContentScript() {
           setHoveredElement(null)
           setHoveredRect(null)
           setInspectedStyles(null)
-          setCapturedDoc(null)
         }
       },
       color_picker_active: (c: { newValue?: boolean }) => {
@@ -98,7 +91,6 @@ export default function CssPickerContentScript() {
           setHoveredElement(null)
           setHoveredRect(null)
           setInspectedStyles(null)
-          setCapturedDoc(null)
         }
       },
       figma_picker_active: (c: { newValue?: boolean }) => {
@@ -107,7 +99,6 @@ export default function CssPickerContentScript() {
           setHoveredElement(null)
           setHoveredRect(null)
           setInspectedStyles(null)
-          setCapturedDoc(null)
         }
       }
     }
@@ -129,11 +120,10 @@ export default function CssPickerContentScript() {
 
       if (message?.type === "START_CSS_PICKER") {
         setIsActive(true)
-        setCurrentMode("inspect-css")
+        setCurrentMode("inspect-element")
         setHoveredElement(null)
         setHoveredRect(null)
         setInspectedStyles(null)
-        setCapturedDoc(null)
         storage.set("css_picker_active", true)
         sendResponse({ success: true })
         return true
@@ -150,7 +140,6 @@ export default function CssPickerContentScript() {
         setHoveredElement(null)
         setHoveredRect(null)
         setInspectedStyles(null)
-        setCapturedDoc(null)
         sendResponse({ success: true })
         return true
       }
@@ -206,7 +195,6 @@ export default function CssPickerContentScript() {
       setHoveredElement(null)
       setHoveredRect(null)
       setInspectedStyles(null)
-      setCapturedDoc(null)
       return
     }
 
@@ -217,7 +205,7 @@ export default function CssPickerContentScript() {
     }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isActive, inspectedStyles, capturedDoc])
+  }, [isActive, inspectedStyles])
 
   const handleMouseMoveOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!overlayRef.current) return
@@ -246,78 +234,29 @@ export default function CssPickerContentScript() {
 
     if (!target || target.closest(".hub-extension-root")) return
 
-    if (currentMode === "figma-element") {
-      try {
-        const doc = await convertElementToIRAsync(target)
-        await copyDirectToFigmaClipboard(doc)
-        setCapturedDoc(doc)
-        setInspectedStyles(null)
-
-        const tagName = target.tagName.toLowerCase()
-        const newItem: CapturedItem = {
-          id: `item-${Date.now()}`,
-          title: tagName,
-          doc
-        }
-        setCapturedItems((prev) => [...prev, newItem])
-      } catch (err) {
-        console.error("[CssPicker] Element capture error:", err)
-      }
-    } else {
-      const styles = extractStyles(target)
-      setInspectedStyles(styles)
-      setCapturedDoc(null)
-      await copyToClipboard(styles.tailwindClasses)
-    }
+    const styles = extractStyles(target)
+    setInspectedStyles(styles)
+    await copyToClipboard(styles.tailwindClasses)
 
     setHoveredElement(null)
     setHoveredRect(null)
-  }
-
-  const handleCaptureFullPage = async (): Promise<IRDocument> => {
-    setIsCapturingPage(true)
-    try {
-      const doc = await convertDocumentToIRAsync({ captureMode: "fullPage" })
-      await copyDirectToFigmaClipboard(doc)
-      setCapturedDoc(doc)
-      setInspectedStyles(null)
-
-      const newItem: CapturedItem = {
-        id: `page-${Date.now()}`,
-        title: "Full Page",
-        doc
-      }
-      setCapturedItems((prev) => [...prev, newItem])
-
-      return doc
-    } finally {
-      setIsCapturingPage(false)
-    }
-  }
-
-  const handleCopyAll = async () => {
-    if (capturedItems.length === 0) return
-    const latest = capturedItems[capturedItems.length - 1]
-    await copyDirectToFigmaClipboard(latest.doc)
   }
 
   const handleClose = () => {
     setIsActive(false)
     setInspectedStyles(null)
-    setCapturedDoc(null)
     setHoveredElement(null)
     setHoveredRect(null)
     storage.set("css_picker_active", false)
-    storage.set("figma_picker_active", false)
   }
 
   if (!isActive) return null
 
-  const isFigmaMode = currentMode === "figma-element"
   const hoverTag = hoveredElement?.tagName.toLowerCase() || ""
-  const hoverClass = hoveredElement?.className && typeof hoveredElement.className === "string"
-    ? `.${hoverElementClass(hoveredElement.className)}`
-    : ""
+  const hoverClass =
+    hoveredElement?.className && typeof hoveredElement.className === "string"
+      ? `.${hoverElementClass(hoveredElement.className)}`
+      : ""
   const hoverDimensions = hoveredRect
     ? `${Math.round(hoveredRect.width)} × ${Math.round(hoveredRect.height)}`
     : ""
@@ -325,21 +264,18 @@ export default function CssPickerContentScript() {
   return (
     <div className={`hub-extension-root ${isDarkMode ? "dark" : ""} text-neutral-900 dark:text-neutral-100 antialiased`}>
       {/* 1. Seamless Floating Island Toolbar Centered at Top */}
-      <FigmaIslandToolbar
+      <CssIslandToolbar
         currentMode={currentMode}
         onModeChange={(mode) => {
           setCurrentMode(mode)
           setInspectedStyles(null)
-          setCapturedDoc(null)
         }}
-        onCapturePage={handleCaptureFullPage}
         onClose={handleClose}
         isDarkMode={isDarkMode}
-        isCapturingPage={isCapturingPage}
       />
 
       {/* 2. Overlay across viewport */}
-      {isActive && !inspectedStyles && !capturedDoc && (
+      {isActive && !inspectedStyles && (
         <div
           ref={overlayRef}
           style={{
@@ -359,7 +295,7 @@ export default function CssPickerContentScript() {
       )}
 
       {/* 3. Hover Bounding Box */}
-      {isActive && hoveredRect && !inspectedStyles && !capturedDoc && (
+      {isActive && hoveredRect && !inspectedStyles && (
         <>
           <div
             style={{
@@ -371,11 +307,7 @@ export default function CssPickerContentScript() {
               zIndex: 2147483645,
               pointerEvents: "none"
             }}
-            className={`rounded-xs transition-all duration-75 border-2 ${
-              isFigmaMode
-                ? "border-purple-500 bg-purple-500/10"
-                : "border-blue-500 bg-blue-500/10"
-            }`}
+            className="rounded-xs transition-all duration-75 border-2 border-blue-500 bg-blue-500/10"
           />
 
           <div
@@ -386,37 +318,22 @@ export default function CssPickerContentScript() {
               zIndex: 2147483646,
               pointerEvents: "none"
             }}
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
-              isFigmaMode ? "bg-purple-600" : "bg-blue-600"
-            } text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]`}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-600 text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]"
           >
             <span>&lt;{hoverTag}&gt;{hoverClass}</span>
             <span className="opacity-40">|</span>
             <span className="font-mono">{hoverDimensions}</span>
             <span className="opacity-40">|</span>
-            <span className="text-[10px] font-extrabold">
-              {isFigmaMode ? "Click to Copy Figma" : "Click to Copy CSS"}
-            </span>
+            <span className="text-[10px] font-extrabold">Click to Copy CSS</span>
           </div>
         </>
       )}
 
-      {/* 4. Inspector Modal */}
+      {/* 4. CSS Inspector Modal */}
       {inspectedStyles && (
         <div style={{ pointerEvents: "auto" }}>
           <CssInspectorModal
             styles={inspectedStyles}
-            onClose={handleClose}
-            isDarkMode={isDarkMode}
-          />
-        </div>
-      )}
-
-      {/* 5. Figma Confirmation Modal */}
-      {capturedDoc && (
-        <div style={{ pointerEvents: "auto" }}>
-          <FigmaPickerModal
-            document={capturedDoc}
             onClose={handleClose}
             isDarkMode={isDarkMode}
           />

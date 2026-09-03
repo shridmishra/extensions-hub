@@ -6,7 +6,9 @@ import type {
   DarkModeSettings,
   ColorHistoryItem,
   FontHistoryItem,
-  YtMusicSettings
+  YtMusicSettings,
+  TimeZonePreset,
+  TimeZoneSettings
 } from "../types/storage"
 
 export type {
@@ -15,7 +17,9 @@ export type {
   DarkModeSettings,
   ColorHistoryItem,
   FontHistoryItem,
-  YtMusicSettings
+  YtMusicSettings,
+  TimeZonePreset,
+  TimeZoneSettings
 }
 
 export const storage = new Storage({ area: "local" })
@@ -44,7 +48,24 @@ export const DEFAULT_YT_MUSIC_SETTINGS: YtMusicSettings = {
   autoPause: true
 }
 
+export const DEFAULT_TIMEZONE_PRESETS: TimeZonePreset[] = [
+  { id: "preset-utc1-ist", name: "UTC+1 to IST", fromTz: "UTC+1", toTz: "IST", isDefault: true },
+  { id: "preset-utc-ist", name: "UTC to IST", fromTz: "UTC", toTz: "IST", isDefault: true },
+  { id: "preset-est-ist", name: "EST to IST", fromTz: "EST", toTz: "IST", isDefault: true },
+  { id: "preset-pst-utc", name: "PST to UTC", fromTz: "PST", toTz: "UTC", isDefault: true },
+  { id: "preset-gmt-cet", name: "GMT to CET", fromTz: "GMT", toTz: "CET", isDefault: true },
+  { id: "preset-utc-jst", name: "UTC to JST", fromTz: "UTC", toTz: "JST", isDefault: true }
+]
 
+export const DEFAULT_TIMEZONE_SETTINGS: TimeZoneSettings = {
+  selectedPresetId: "preset-utc1-ist",
+  fromTz: "UTC+1",
+  toTz: "IST",
+  timeFormat: "12h",
+  showSeconds: false,
+  customPresets: DEFAULT_TIMEZONE_PRESETS,
+  recentInputs: ["13000", "13:00", "1:30 PM", "930"]
+}
 
 // Registry of interactive / on-page inspection tools that require exclusive activation
 export const INTERACTIVE_TOOLS: Record<string, string> = {
@@ -54,6 +75,9 @@ export const INTERACTIVE_TOOLS: Record<string, string> = {
   "figma-picker": "figma_picker_active",
   "page-ruler": "page_ruler_active",
   "link-grabber": "link_grabber_active",
+  "screenshot-capture": "screenshot_capture_active",
+  "color-palette": "color_palette_active",
+  "time-zone-converter": "time_zone_converter_active",
   "css-inspector": "css_inspector_active",
   "element-remover": "element_remover_active"
 }
@@ -241,6 +265,21 @@ export const ExtensionStorage = {
     const updated = { ...current, ...settings }
     await storage.set("hub_yt_music_settings", updated)
     return updated
+  },
+
+  // Time Zone Settings & Presets
+  async getTimeZoneSettings(): Promise<TimeZoneSettings> {
+    const saved = await storage.get<TimeZoneSettings>("hub_timezone_settings")
+    if (saved) return { ...DEFAULT_TIMEZONE_SETTINGS, ...saved }
+    return DEFAULT_TIMEZONE_SETTINGS
+  },
+
+  async setTimeZoneSettings(settings: Partial<TimeZoneSettings>): Promise<TimeZoneSettings> {
+    const current = await this.getTimeZoneSettings()
+    const updated = { ...current, ...settings }
+    await storage.set("hub_timezone_settings", updated)
+    return updated
   }
 }
+
 

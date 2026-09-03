@@ -1,7 +1,7 @@
 import {
   type ParsedClipPath,
   resolveLength
-} from "./parser"
+} from "./parser.ts"
 
 export interface ResolvedGeometry {
   svgPath: string

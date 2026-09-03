@@ -20,7 +20,11 @@ import {
   Music,
   Headphones,
   Disc,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Camera,
+  Crop,
+  Clock,
+  Globe
 } from "lucide-react"
 import {
   FigmaIcon,
@@ -74,6 +78,12 @@ export const ExtensionIcon: React.FC<ExtensionIconProps> = ({
     case "ImageIcon":
     case "Media":
       return <ImageIcon size={size} className={className} />
+    case "Camera":
+    case "Screenshot":
+    case "Capture":
+      return <Camera size={size} className={className} />
+    case "Crop":
+      return <Crop size={size} className={className} />
     case "LayoutGrid":
       return <LayoutGrid size={size} className={className} />
     case "Palette":
@@ -100,8 +110,16 @@ export const ExtensionIcon: React.FC<ExtensionIconProps> = ({
       return <Headphones size={size} className={className} />
     case "Disc":
       return <Disc size={size} className={className} />
+    case "Clock":
+    case "Watch":
+    case "Timer":
+    case "TimeZone":
+      return <Clock size={size} className={className} />
+    case "Globe":
+      return <Globe size={size} className={className} />
     default:
       return <Box size={size} className={className} />
   }
 }
+
 

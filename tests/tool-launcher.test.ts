@@ -56,6 +56,8 @@ describe("Tool Launcher & Dynamic Script Injection Tests", () => {
       assert.strictEqual(TOOL_MESSAGE_MAP["figma-picker"], "START_ELEMENT_SELECTION")
       assert.strictEqual(TOOL_MESSAGE_MAP["page-ruler"], "START_PAGE_RULER")
       assert.strictEqual(TOOL_MESSAGE_MAP["link-grabber"], "START_LINK_GRABBER")
+      assert.strictEqual(TOOL_MESSAGE_MAP["screenshot-capture"], "START_SCREENSHOT_CAPTURE")
+      assert.strictEqual(TOOL_MESSAGE_MAP["color-palette"], "START_COLOR_PALETTE")
     })
 
     it("should ensure all implemented interactive tools are in INTERACTIVE_TOOLS registry", () => {

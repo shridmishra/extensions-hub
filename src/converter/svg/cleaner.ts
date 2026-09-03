@@ -89,8 +89,20 @@ export function cleanAndNormalizeSvg(
       if (itemComp) {
         const compFill = itemComp.fill
         if (compFill && compFill !== "none" && compFill !== "rgba(0, 0, 0, 0)") {
-          if (!attrFill || attrFill.toLowerCase() === "currentcolor" || attrFill.startsWith("var(") || !attrFill.startsWith("url(")) {
-            cloneItem.setAttribute("fill", formatCssColorToRgbString(compFill))
+          // Do NOT inject fill on root svg element or elements without explicit fill attribute
+          if (tag !== "svg" && (attrFill || compFill !== "rgb(0, 0, 0)")) {
+            if (!attrFill || attrFill.toLowerCase() === "currentcolor" || attrFill.startsWith("var(") || !attrFill.startsWith("url(")) {
+              cloneItem.setAttribute("fill", formatCssColorToRgbString(compFill))
+            }
+          }
+        } else if (attrFill && attrFill !== "none") {
+          // Attribute has a fill (including var(--...) or color) but compFill is none/empty
+          if (attrFill.toLowerCase() === "currentcolor") {
+            cloneItem.setAttribute("fill", itemColor)
+          } else if (attrFill.startsWith("var(")) {
+            cloneItem.setAttribute("fill", formatCssColorToRgbString(attrFill, itemColor))
+          } else if (!attrFill.startsWith("url(")) {
+            cloneItem.setAttribute("fill", formatCssColorToRgbString(attrFill, attrFill))
           }
         } else if (compFill === "none" || compFill === "rgba(0, 0, 0, 0)") {
           if (!attrFill?.startsWith("url(")) {
@@ -98,8 +110,12 @@ export function cleanAndNormalizeSvg(
           }
         }
       } else {
-        if (attrFill && attrFill.toLowerCase() === "currentcolor") {
-          cloneItem.setAttribute("fill", itemColor)
+        if (attrFill) {
+          if (attrFill.toLowerCase() === "currentcolor") {
+            cloneItem.setAttribute("fill", itemColor)
+          } else if (attrFill.startsWith("var(")) {
+            cloneItem.setAttribute("fill", formatCssColorToRgbString(attrFill, itemColor))
+          }
         }
       }
 
@@ -121,12 +137,23 @@ export function cleanAndNormalizeSvg(
 
           const slj = itemComp.strokeLinejoin || cloneItem.getAttribute("stroke-linejoin")
           if (slj && slj !== "miter") cloneItem.setAttribute("stroke-linejoin", slj)
-        } else if (attrStroke && attrStroke.toLowerCase() === "currentcolor") {
-          cloneItem.setAttribute("stroke", itemColor)
+        } else if (attrStroke && attrStroke !== "none") {
+          // Attribute has stroke (e.g. stroke="var(--border)") but compStroke is none/empty
+          if (attrStroke.toLowerCase() === "currentcolor") {
+            cloneItem.setAttribute("stroke", itemColor)
+          } else if (attrStroke.startsWith("var(")) {
+            cloneItem.setAttribute("stroke", formatCssColorToRgbString(attrStroke, itemColor))
+          } else if (!attrStroke.startsWith("url(")) {
+            cloneItem.setAttribute("stroke", formatCssColorToRgbString(attrStroke, attrStroke))
+          }
         }
       } else {
-        if (attrStroke && attrStroke.toLowerCase() === "currentcolor") {
-          cloneItem.setAttribute("stroke", itemColor)
+        if (attrStroke) {
+          if (attrStroke.toLowerCase() === "currentcolor") {
+            cloneItem.setAttribute("stroke", itemColor)
+          } else if (attrStroke.startsWith("var(")) {
+            cloneItem.setAttribute("stroke", formatCssColorToRgbString(attrStroke, itemColor))
+          }
         }
       }
 
@@ -144,6 +171,10 @@ export function cleanAndNormalizeSvg(
       const styleAttr = cloneItem.getAttribute("style")
       if (styleAttr) {
         let cleanStyle = styleAttr.replace(/currentcolor/gi, itemColor)
+        cleanStyle = cleanStyle.replace(/var\(\s*(--[a-zA-Z0-9_-]+)[^)]*\)/g, (match) => {
+          const res = formatCssColorToRgbString(match, "")
+          return res || match
+        })
         cloneItem.setAttribute("style", cleanStyle)
       }
 
@@ -156,8 +187,20 @@ export function cleanAndNormalizeSvg(
       cloneItem.removeAttribute("class")
     }
 
+    const imgElements = Array.from(clone.querySelectorAll("image"))
+    for (const img of imgElements) {
+      const href = img.getAttribute("href") || img.getAttribute("xlink:href")
+      if (href) {
+        img.setAttribute("href", href)
+        img.setAttribute("xlink:href", href)
+      }
+    }
+
     if (!clone.getAttribute("xmlns")) {
       clone.setAttribute("xmlns", "http://www.w3.org/2000/svg")
+    }
+    if (!clone.getAttribute("xmlns:xlink")) {
+      clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink")
     }
 
     const serializer = typeof XMLSerializer !== "undefined" ? new XMLSerializer() : null
@@ -181,6 +224,13 @@ export function cleanAndNormalizeSvg(
     raw = raw.replace(/stroke=["']currentColor["']/gi, `stroke="${computedColor}"`)
     raw = raw.replace(/fill=["']currentColor["']/gi, `fill="${computedColor}"`)
     raw = raw.replace(/currentColor/gi, computedColor)
+  }
+
+  if (raw.includes("var(")) {
+    raw = raw.replace(/var\(\s*(--[a-zA-Z0-9_-]+)[^)]*\)/g, (match) => {
+      const res = formatCssColorToRgbString(match, "")
+      return res || match
+    })
   }
 
   if (renderedWidth && renderedHeight && renderedWidth > 0 && renderedHeight > 0) {

@@ -1,5 +1,5 @@
 import type { IRDocument, IRNode, IRFill } from "../types/ir"
-import { convertElementToIRNode, type TraversalContext } from "./dom/traversal"
+import { convertElementToIRNode, isTextClippedBackground, type TraversalContext } from "./dom/traversal"
 import { CLIPBOARD_MAGIC_HEADER } from "../constants/defaults"
 import { convertIRToSvg } from "./svg/serializer"
 import { copyDirectToFigmaClipboard } from "./clipboard/writer"
@@ -133,6 +133,10 @@ export function resolveElementBackground(element: Element): IRFill[] {
   while (curr && curr !== document.documentElement) {
     try {
       const style = window.getComputedStyle(curr)
+      if (isTextClippedBackground(style)) {
+        curr = curr.parentElement
+        continue
+      }
       if (!gradientFill && style.backgroundImage && style.backgroundImage !== "none" && style.backgroundImage.includes("gradient")) {
         const grad = parseCssGradient(style.backgroundImage)
         if (grad) gradientFill = grad
@@ -191,7 +195,7 @@ export function convertElementToIR(
   const rootNode = convertElementToIRNode(element, ctx)
   const { fonts, fontFaceCss } = extractDocumentFonts()
 
-  if (rootNode && rootNode.fills.length === 0) {
+  if (rootNode && rootNode.fills.length === 0 && !rootNode.metadata?.isTextClipped) {
     rootNode.fills = resolveElementBackground(element)
   }
 
@@ -238,13 +242,28 @@ export function convertDocumentToIR(
   const docEl = document.documentElement
   const body = document.body
 
-  const fullWidth = Math.max(
+  const docStyle = docEl ? window.getComputedStyle(docEl) : null
+  const bodyStyle = body ? window.getComputedStyle(body) : null
+  const isOverflowXHidden =
+    docStyle?.overflowX === "hidden" ||
+    docStyle?.overflowX === "clip" ||
+    bodyStyle?.overflowX === "hidden" ||
+    bodyStyle?.overflowX === "clip"
+
+  const clientWidth = docEl.clientWidth || (typeof window !== "undefined" ? window.innerWidth : 1440)
+
+  let fullWidth = Math.max(
     body.scrollWidth,
     docEl.scrollWidth,
     body.offsetWidth,
     docEl.offsetWidth,
     docEl.clientWidth
   )
+
+  // Clamp fullWidth to clientWidth if horizontal overflow is forbidden
+  if (isOverflowXHidden && clientWidth > 0) {
+    fullWidth = clientWidth
+  }
 
   const fullHeight = Math.max(
     body.scrollHeight,
@@ -259,8 +278,8 @@ export function convertDocumentToIR(
 
   const ctx: TraversalContext = {
     rootRect: {
-      left: 0,
-      top: 0,
+      left: -scrollX,
+      top: -scrollY,
       width: fullWidth,
       height: fullHeight
     },

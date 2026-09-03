@@ -63,6 +63,7 @@ const CATEGORY_MAP: Record<string, string> = {
   "word-spacing": "Typography",
   "white-space": "Typography",
   "text-overflow": "Typography",
+  "-webkit-text-fill-color": "Typography",
 
   // Spacing
   "margin-top": "Spacing",
@@ -80,6 +81,8 @@ const CATEGORY_MAP: Record<string, string> = {
   "background-position": "Styling",
   "background-size": "Styling",
   "background-repeat": "Styling",
+  "-webkit-background-clip": "Styling",
+  "background-clip": "Styling",
   opacity: "Styling",
   visibility: "Styling",
   cursor: "Styling",
@@ -329,6 +332,16 @@ function generateCleanCSS(element: HTMLElement, computed: CSSStyleDeclaration): 
   const bgImage = computed.getPropertyValue("background-image")
   if (bgImage && bgImage !== "none") {
     cssRules.push(`background-image: ${bgImage};`)
+  }
+
+  const bgClip = (computed.getPropertyValue("background-clip") || computed.getPropertyValue("-webkit-background-clip") || "").toLowerCase()
+  if (bgClip.includes("text")) {
+    cssRules.push(`-webkit-background-clip: text;`)
+    cssRules.push(`background-clip: text;`)
+    const fillCol = computed.getPropertyValue("-webkit-text-fill-color")
+    if (fillCol && fillCol !== "currentColor") {
+      cssRules.push(`-webkit-text-fill-color: ${fillCol};`)
+    }
   }
 
   const btW = computed.getPropertyValue("border-top-width")
@@ -598,9 +611,15 @@ function generateTailwindClasses(element: HTMLElement, computed: CSSStyleDeclara
     classes.push(`leading-[${lHeight}]`)
   }
 
-  const color = getProp("color")
-  if (color && color !== "rgba(0, 0, 0, 0)" && color !== "rgb(0, 0, 0)" && color !== "rgb(15, 14, 19)") {
-    classes.push(`text-[${cleanColorForTailwind(color)}]`)
+  const bgClip = (getProp("background-clip") || getProp("-webkit-background-clip") || "").toLowerCase()
+  if (bgClip.includes("text")) {
+    classes.push("bg-clip-text")
+    classes.push("text-transparent")
+  } else {
+    const color = getProp("color")
+    if (color && color !== "rgba(0, 0, 0, 0)" && color !== "rgb(0, 0, 0)" && color !== "rgb(15, 14, 19)") {
+      classes.push(`text-[${cleanColorForTailwind(color)}]`)
+    }
   }
 
   const tAlign = getProp("text-align")

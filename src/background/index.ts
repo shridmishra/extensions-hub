@@ -42,5 +42,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(() => sendResponse({ success: false }))
     return true
   }
+
+  if (message.type === "CAPTURE_VISIBLE_TAB") {
+    const windowId = sender.tab?.windowId
+    const format = message.format === "jpeg" || message.format === "jpg" ? "jpeg" : "png"
+    const quality = typeof message.quality === "number" ? message.quality : 95
+    const captureOptions = {
+      format: format as "png" | "jpeg",
+      ...(format === "jpeg" ? { quality } : {})
+    }
+
+    try {
+      chrome.tabs.captureVisibleTab(windowId as any, captureOptions, (dataUrl) => {
+        if (chrome.runtime.lastError || !dataUrl) {
+          sendResponse({
+            success: false,
+            error: chrome.runtime.lastError?.message || "Failed to capture tab"
+          })
+        } else {
+          sendResponse({ success: true, dataUrl })
+        }
+      })
+    } catch (err: any) {
+      sendResponse({ success: false, error: err?.message || "Exception capturing tab" })
+    }
+    return true
+  }
 })
 

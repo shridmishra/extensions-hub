@@ -52,9 +52,9 @@ export const ActiveToolBanner: React.FC<ActiveToolBannerProps> = ({
         pointerEvents: "none",
         background: "transparent"
       }}
-      className={cn("hub-extension-root font-sans select-none", isDarkMode ? "dark" : "", className)}
+      className={cn("font-sans select-none pointer-events-none", isDarkMode ? "dark" : "", className)}
     >
-      <div className="pointer-events-auto animate-scale-in flex items-center h-8.5 px-3 py-1 gap-2.5 rounded-full bg-white/95 dark:bg-neutral-900/95 text-neutral-900 dark:text-neutral-100 shadow-xl backdrop-blur-md">
+      <div className="hub-extension-root pointer-events-auto animate-scale-in flex items-center h-8.5 px-3 py-1 gap-2.5 rounded-full bg-white/95 dark:bg-neutral-900/95 text-neutral-900 dark:text-neutral-100 shadow-xl backdrop-blur-md">
         {/* Tool Identifier */}
         <div className="flex items-center gap-1.5 shrink-0">
           {icon && <span className="flex items-center justify-center shrink-0">{icon}</span>}

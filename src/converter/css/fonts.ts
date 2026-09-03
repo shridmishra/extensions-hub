@@ -1,4 +1,4 @@
-import type { IRFontInfo } from "../../types/ir"
+import type { IRFontInfo } from "../../types/ir.ts"
 
 const STYLE_SUFFIX_REGEX = /[-_](thin|hairline|extralight|extra-light|ultralight|ultra-light|light|regular|normal|book|roman|medium|semibold|semi-bold|demibold|demi-bold|bold|extrabold|extra-bold|ultrabold|ultra-bold|black|heavy|italic|oblique|slanted)$/i
 

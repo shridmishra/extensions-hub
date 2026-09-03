@@ -4,7 +4,7 @@ import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo"
 import React, { useEffect, useState, useRef, useCallback } from "react"
 import { Storage } from "@plasmohq/storage"
 import { Ruler, MousePointer } from "lucide-react"
-import ActiveToolBanner from "../components/ui/ActiveToolBanner"
+import PageRulerIslandToolbar, { type PageRulerToolbarMode } from "../components/extensions/PageRulerIslandToolbar"
 import PageRulerModal, { type RulerMetrics } from "../components/extensions/PageRulerModal"
 
 export const config: PlasmoCSConfig = {
@@ -113,6 +113,7 @@ function extractElementMetrics(
 
 export default function PageRulerContentScript() {
   const [isActive, setIsActive] = useState(false)
+  const [currentMode, setCurrentMode] = useState<PageRulerToolbarMode>("measure-element")
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null)
   const [lockedElement, setLockedElement] = useState<HTMLElement | null>(null)
@@ -414,13 +415,11 @@ export default function PageRulerContentScript() {
         </div>
       )}
 
-      {/* 2. Top Floating Active Island Pill */}
+      {/* 2. Seamless Floating Island Toolbar Centered at Top */}
       {isActive && (
-        <ActiveToolBanner
-          title="Page Ruler"
-          icon={<Ruler size={13} className="text-neutral-900 dark:text-neutral-100" />}
-          instruction="Hover/click element or drag to measure"
-          instructionIcon={<MousePointer size={12} />}
+        <PageRulerIslandToolbar
+          currentMode={currentMode}
+          onModeChange={setCurrentMode}
           onClose={handleClose}
           isDarkMode={isDarkMode}
         />

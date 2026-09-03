@@ -142,6 +142,54 @@ export const EXTENSION_REGISTRY: ExtensionManifestItem[] = [
     defaultEnabled: true,
     tags: ["youtube", "yt-music", "music", "redirect", "video", "player", "controls", "audio", "timeline", "song"],
     isImplemented: true
+  },
+  {
+    id: "screenshot-capture",
+    number: 9,
+    name: "Full Page & Area Screenshot",
+    shortName: "Page Screenshot",
+    description: "Capture full-length scrolling webpage screenshots, selected screen areas, or DOM elements with instant copy and multi-format export.",
+    category: "Utility",
+    type: "interactive",
+    icon: "Camera",
+    stars: 1540,
+    likes: 4210,
+    defaultPinned: true,
+    defaultEnabled: true,
+    tags: ["screenshot", "full-page", "capture", "viewport", "crop", "download", "png", "pdf", "element", "camera"],
+    isImplemented: true
+  },
+  {
+    id: "color-palette",
+    number: 10,
+    name: "Page Color Palette Inspector",
+    shortName: "Color Palette",
+    description: "Extract, categorize, and inspect the entire color palette used on the active page by background, text, border, and CTA usage.",
+    category: "Color & Design",
+    type: "interactive",
+    icon: "Palette",
+    stars: 2180,
+    likes: 5920,
+    defaultPinned: true,
+    defaultEnabled: true,
+    tags: ["palette", "color", "colors", "theme", "swatches", "design", "css", "extractor", "background", "text", "border", "cta"],
+    isImplemented: true
+  },
+  {
+    id: "time-zone-converter",
+    number: 11,
+    name: "Time Zone Converter & Presets",
+    shortName: "Time Zone",
+    description: "Convert time across custom presets (e.g. UTC+1 to IST) with smart auto-detecting time parsing and 12h/24h toggle.",
+    category: "Utility",
+    type: "interactive",
+    icon: "Clock",
+    stars: 2340,
+    likes: 6150,
+    defaultPinned: true,
+    defaultEnabled: true,
+    tags: ["timezone", "time", "converter", "utc", "ist", "gmt", "clock", "presets", "world-clock", "hours"],
+    isImplemented: true
   }
 ]
 

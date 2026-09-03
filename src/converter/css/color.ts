@@ -78,6 +78,21 @@ export function parseCssColor(colorStr: string | null | undefined): IRColor | nu
     return parseColorFn(str)
   }
 
+  // CSS Variable resolution fallback
+  if (str.includes("var(")) {
+    const varResolved = resolveCssVariableInDom(colorStr)
+    if (varResolved && varResolved !== colorStr) {
+      const parsed = parseCssColor(varResolved)
+      if (parsed) return parsed
+    }
+  }
+
+  // Browser DOM normalization fallback for color-mix and complex CSS functions
+  const domNormalized = resolveColorViaDom(colorStr)
+  if (domNormalized && domNormalized !== colorStr && domNormalized !== str) {
+    return parseCssColor(domNormalized)
+  }
+
   // Browser canvas normalization fallback for complex color expressions
   const browserNormalized = normalizeColorViaBrowser(colorStr)
   if (browserNormalized && browserNormalized !== colorStr && browserNormalized !== str) {
@@ -88,6 +103,55 @@ export function parseCssColor(colorStr: string | null | undefined): IRColor | nu
 }
 
 let _canvasCtx: CanvasRenderingContext2D | null = null
+let _dummyColorEl: HTMLElement | null = null
+
+/**
+ * Resolves any valid CSS variable expression in DOM context
+ */
+export function resolveCssVariableInDom(varExpr: string): string {
+  if (typeof document === "undefined") return varExpr
+  const match = varExpr.match(/var\(\s*(--[a-zA-Z0-9_-]+)(?:\s*,\s*([^)]+))?\s*\)/)
+  if (match) {
+    const varName = match[1]
+    const fallback = match[2] ? match[2].trim() : ""
+    try {
+      const docEl = document.documentElement
+      const val =
+        window.getComputedStyle(docEl).getPropertyValue(varName)?.trim() ||
+        (document.body ? window.getComputedStyle(document.body).getPropertyValue(varName)?.trim() : "")
+      if (val) return val
+    } catch {}
+    if (fallback) return fallback
+  }
+  return varExpr
+}
+
+/**
+ * Resolves complex CSS color expressions (color-mix, CSS variables, light-dark, relative colors)
+ * via native DOM computed style engine.
+ */
+export function resolveColorViaDom(colorStr: string): string | null {
+  if (typeof document === "undefined" || !document.body) return null
+  try {
+    if (!_dummyColorEl) {
+      _dummyColorEl = document.createElement("div")
+      _dummyColorEl.style.display = "none"
+      _dummyColorEl.style.position = "fixed"
+      _dummyColorEl.style.pointerEvents = "none"
+      _dummyColorEl.setAttribute("aria-hidden", "true")
+      document.body.appendChild(_dummyColorEl)
+    }
+    _dummyColorEl.style.color = ""
+    _dummyColorEl.style.color = colorStr
+    const computed = window.getComputedStyle(_dummyColorEl).color
+    if (computed && computed !== "" && computed !== "rgba(0, 0, 0, 0)") {
+      return computed
+    }
+    return null
+  } catch {
+    return null
+  }
+}
 
 /**
  * Normalizes any valid CSS color string to hex or rgba using browser's native canvas engine

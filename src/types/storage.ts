@@ -40,3 +40,22 @@ export interface YtMusicSettings {
   buttonPosition: "right" | "left"
   autoPause: boolean
 }
+
+export interface TimeZonePreset {
+  id: string
+  name: string
+  fromTz: string
+  toTz: string
+  isDefault?: boolean
+}
+
+export interface TimeZoneSettings {
+  selectedPresetId: string
+  fromTz: string
+  toTz: string
+  timeFormat: "12h" | "24h"
+  showSeconds: boolean
+  customPresets: TimeZonePreset[]
+  recentInputs: string[]
+}
+

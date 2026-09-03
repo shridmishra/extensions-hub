@@ -6,9 +6,6 @@ import { Storage } from "@plasmohq/storage"
 import { convertElementToIRAsync, convertDocumentToIRAsync, copyDirectToFigmaClipboard } from "../converter"
 import type { IRDocument } from "../types/ir"
 import FigmaPickerModal from "../components/extensions/FigmaPickerModal"
-import CssInspectorModal from "../components/extensions/CssInspectorModal"
-import { extractStyles, type ExtractedStyles } from "../lib/css-extractor"
-import { copyToClipboard } from "../lib/utils"
 import FigmaIslandToolbar, { type ToolbarMode, type CapturedItem } from "../components/extensions/FigmaIslandToolbar"
 
 export const config: PlasmoCSConfig = {
@@ -67,7 +64,6 @@ export default function FigmaPickerContentScript() {
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null)
   const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null)
   const [capturedDoc, setCapturedDoc] = useState<IRDocument | null>(null)
-  const [inspectedCss, setInspectedCss] = useState<ExtractedStyles | null>(null)
   const [capturedItems, setCapturedItems] = useState<CapturedItem[]>([])
   const [isCapturingPage, setIsCapturingPage] = useState<boolean>(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -89,7 +85,6 @@ export default function FigmaPickerContentScript() {
           setHoveredElement(null)
           setHoveredRect(null)
           setCapturedDoc(null)
-          setInspectedCss(null)
         }
       },
       color_picker_active: (c: { newValue?: boolean }) => {
@@ -98,7 +93,6 @@ export default function FigmaPickerContentScript() {
           setHoveredElement(null)
           setHoveredRect(null)
           setCapturedDoc(null)
-          setInspectedCss(null)
         }
       }
     }
@@ -143,7 +137,6 @@ export default function FigmaPickerContentScript() {
         setHoveredElement(null)
         setHoveredRect(null)
         setCapturedDoc(null)
-        setInspectedCss(null)
         storage.set("figma_picker_active", true)
         sendResponse({ success: true })
         return true
@@ -170,7 +163,6 @@ export default function FigmaPickerContentScript() {
         setHoveredElement(null)
         setHoveredRect(null)
         setCapturedDoc(null)
-        setInspectedCss(null)
         sendResponse({ success: true })
         return true
       }
@@ -207,7 +199,6 @@ export default function FigmaPickerContentScript() {
       setHoveredElement(null)
       setHoveredRect(null)
       setCapturedDoc(null)
-      setInspectedCss(null)
       return
     }
 
@@ -218,13 +209,32 @@ export default function FigmaPickerContentScript() {
     }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isActive, capturedDoc, inspectedCss])
+  }, [isActive, capturedDoc])
+
+  const getTargetFromPoint = (clientX: number, clientY: number): HTMLElement | null => {
+    if (typeof document === "undefined") return null
+    const elements = document.elementsFromPoint(clientX, clientY)
+    for (const el of elements) {
+      if (el.closest(".hub-extension-root") || el.tagName.toLowerCase().startsWith("plasmo-")) {
+        continue
+      }
+      const header = el.closest("header, nav, [role='banner']") as HTMLElement
+      if (header && !header.closest(".hub-extension-root")) {
+        const r = header.getBoundingClientRect()
+        if (clientY >= r.top && clientY <= r.bottom + 12) {
+          return header
+        }
+      }
+      return el as HTMLElement
+    }
+    return null
+  }
 
   const handleMouseMoveOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!overlayRef.current) return
 
     overlayRef.current.style.setProperty("pointer-events", "none", "important")
-    const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
+    const target = getTargetFromPoint(e.clientX, e.clientY)
     overlayRef.current.style.setProperty("pointer-events", "auto", "important")
 
     if (!target || target.closest(".hub-extension-root")) return
@@ -242,47 +252,87 @@ export default function FigmaPickerContentScript() {
     e.stopPropagation()
 
     overlayRef.current.style.setProperty("pointer-events", "none", "important")
-    const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
+    const target = getTargetFromPoint(e.clientX, e.clientY)
     overlayRef.current.style.setProperty("pointer-events", "auto", "important")
 
     if (!target || target.closest(".hub-extension-root")) return
 
-    if (currentMode === "inspect-css") {
-      const styles = extractStyles(target)
-      setInspectedCss(styles)
-      setCapturedDoc(null)
-      await copyToClipboard(styles.tailwindClasses)
-    } else {
-      // Figma element mode
-      try {
-        const doc = await convertElementToIRAsync(target)
-        await copyDirectToFigmaClipboard(doc)
-        setCapturedDoc(doc)
-        setInspectedCss(null)
+    // Figma element capture
+    try {
+      const doc = await convertElementToIRAsync(target)
+      await copyDirectToFigmaClipboard(doc)
+      setCapturedDoc(doc)
 
-        const tagName = target.tagName.toLowerCase()
-        const newItem: CapturedItem = {
-          id: `item-${Date.now()}`,
-          title: tagName,
-          doc
-        }
-        setCapturedItems((prev) => [...prev, newItem])
-      } catch (err) {
-        console.error("[FigmaPicker] Element capture error:", err)
+      const tagName = target.tagName.toLowerCase()
+      const newItem: CapturedItem = {
+        id: `item-${Date.now()}`,
+        title: tagName,
+        doc
       }
+      setCapturedItems((prev) => [...prev, newItem])
+    } catch (err) {
+      console.error("[FigmaPicker] Element capture error:", err)
     }
 
     setHoveredElement(null)
     setHoveredRect(null)
   }
 
+async function preparePageForCapture(): Promise<() => void> {
+  const originalScrollX = window.scrollX || window.pageXOffset || 0
+  const originalScrollY = window.scrollY || window.pageYOffset || 0
+  const totalHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+  const step = Math.max(window.innerHeight * 0.75, 500)
+
+  // 1. Scroll in increments to trigger IntersectionObserver, lazy images, and ScrollTrigger
+  try {
+    for (let y = 0; y <= totalHeight; y += step) {
+      window.scrollTo(0, y)
+      await new Promise((r) => setTimeout(r, 30))
+    }
+    window.scrollTo(0, totalHeight)
+    await new Promise((r) => setTimeout(r, 40))
+
+    // Trigger any global GSAP ScrollTrigger if present
+    const win = window as any
+    if (win.ScrollTrigger?.getAll) {
+      win.ScrollTrigger.getAll().forEach((st: any) => {
+        if (typeof st.refresh === "function") st.refresh()
+      })
+    }
+  } catch {}
+
+  // 2. Scroll cleanly to top for full-page capture so navbar and top elements are at natural y=0
+  try {
+    const win = window as any
+    if (win.lenis && typeof win.lenis.scrollTo === "function") {
+      win.lenis.scrollTo(0, { immediate: true })
+    }
+  } catch {}
+  window.scrollTo({ left: 0, top: 0, behavior: "instant" as ScrollBehavior })
+
+  // 3. Wait for Lenis and CSS transitions (e.g. duration-500 on fixed headers) to settle
+  await new Promise((r) => setTimeout(r, 450))
+
+  return () => {
+    try {
+      const win = window as any
+      if (win.lenis && typeof win.lenis.scrollTo === "function") {
+        win.lenis.scrollTo(originalScrollY, { immediate: true })
+      }
+    } catch {}
+    window.scrollTo(originalScrollX, originalScrollY)
+  }
+}
+
   const handleCaptureFullPage = async (): Promise<IRDocument> => {
     setIsCapturingPage(true)
+    let restoreScroll: (() => void) | null = null
     try {
+      restoreScroll = await preparePageForCapture()
       const doc = await convertDocumentToIRAsync({ captureMode: "fullPage" })
       await copyDirectToFigmaClipboard(doc)
       setCapturedDoc(doc)
-      setInspectedCss(null)
 
       const newItem: CapturedItem = {
         id: `page-${Date.now()}`,
@@ -293,6 +343,7 @@ export default function FigmaPickerContentScript() {
 
       return doc
     } finally {
+      if (restoreScroll) restoreScroll()
       setIsCapturingPage(false)
     }
   }
@@ -306,20 +357,18 @@ export default function FigmaPickerContentScript() {
   const handleClose = () => {
     setIsActive(false)
     setCapturedDoc(null)
-    setInspectedCss(null)
     setHoveredElement(null)
     setHoveredRect(null)
     storage.set("figma_picker_active", false)
-    storage.set("css_picker_active", false)
   }
 
   if (!isActive) return null
 
-  const isFigmaMode = currentMode === "figma-element"
   const hoverTag = hoveredElement?.tagName.toLowerCase() || ""
-  const hoverClass = hoveredElement?.className && typeof hoveredElement.className === "string"
-    ? `.${hoverElementClass(hoveredElement.className)}`
-    : ""
+  const hoverClass =
+    hoveredElement?.className && typeof hoveredElement.className === "string"
+      ? `.${hoverElementClass(hoveredElement.className)}`
+      : ""
   const hoverDimensions = hoveredRect
     ? `${Math.round(hoveredRect.width)} × ${Math.round(hoveredRect.height)}`
     : ""
@@ -332,7 +381,6 @@ export default function FigmaPickerContentScript() {
         onModeChange={(mode) => {
           setCurrentMode(mode)
           setCapturedDoc(null)
-          setInspectedCss(null)
         }}
         onCapturePage={handleCaptureFullPage}
         onClose={handleClose}
@@ -341,7 +389,7 @@ export default function FigmaPickerContentScript() {
       />
 
       {/* 2. Overlay across viewport for hover & click inspection */}
-      {isActive && !capturedDoc && !inspectedCss && (
+      {isActive && !capturedDoc && (
         <div
           ref={overlayRef}
           style={{
@@ -361,7 +409,7 @@ export default function FigmaPickerContentScript() {
       )}
 
       {/* 3. Hover Bounding Box */}
-      {isActive && hoveredRect && !capturedDoc && !inspectedCss && (
+      {isActive && hoveredRect && !capturedDoc && (
         <>
           <div
             style={{
@@ -373,11 +421,7 @@ export default function FigmaPickerContentScript() {
               zIndex: 2147483645,
               pointerEvents: "none"
             }}
-            className={`rounded-xs transition-all duration-75 border-2 ${
-              isFigmaMode
-                ? "border-purple-500 bg-purple-500/10"
-                : "border-blue-500 bg-blue-500/10"
-            }`}
+            className="rounded-xs transition-all duration-75 border-2 border-purple-500 bg-purple-500/10"
           />
 
           <div
@@ -388,17 +432,13 @@ export default function FigmaPickerContentScript() {
               zIndex: 2147483646,
               pointerEvents: "none"
             }}
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
-              isFigmaMode ? "bg-purple-600" : "bg-blue-600"
-            } text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]`}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-600 text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]"
           >
             <span>&lt;{hoverTag}&gt;{hoverClass}</span>
             <span className="opacity-40">|</span>
             <span className="font-mono">{hoverDimensions}</span>
             <span className="opacity-40">|</span>
-            <span className="text-[10px] font-extrabold">
-              {isFigmaMode ? "Click to Copy Figma" : "Click to Copy CSS"}
-            </span>
+            <span className="text-[10px] font-extrabold">Click to Copy for Figma</span>
           </div>
         </>
       )}
@@ -408,17 +448,6 @@ export default function FigmaPickerContentScript() {
         <div style={{ pointerEvents: "auto" }}>
           <FigmaPickerModal
             document={capturedDoc}
-            onClose={handleClose}
-            isDarkMode={isDarkMode}
-          />
-        </div>
-      )}
-
-      {/* 5. CSS Inspector Modal */}
-      {inspectedCss && (
-        <div style={{ pointerEvents: "auto" }}>
-          <CssInspectorModal
-            styles={inspectedCss}
             onClose={handleClose}
             isDarkMode={isDarkMode}
           />

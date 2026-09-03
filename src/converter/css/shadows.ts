@@ -1,5 +1,5 @@
-import type { IREffect } from "../../types/ir"
-import { parseCssColor } from "./color"
+import type { IREffect } from "../../types/ir.ts"
+import { parseCssColor } from "./color.ts"
 
 /**
  * Parses CSS box-shadow or text-shadow string into IREffect[]
@@ -46,6 +46,58 @@ export function parseCssFilterDropShadow(filterStr: string | null | undefined): 
     if (match[1]) {
       const effect = parseSingleShadow(match[1])
       if (effect) effects.push(effect)
+    }
+  }
+
+  return effects
+}
+
+/**
+ * Parses CSS filter blur(...) expressions into IREffect[]
+ */
+export function parseCssFilterBlur(filterStr: string | null | undefined): IREffect[] {
+  if (!filterStr || filterStr === "none") return []
+
+  const effects: IREffect[] = []
+  const blurMatch = filterStr.match(/\bblur\(([^)]+)\)/i)
+  if (blurMatch && blurMatch[1]) {
+    const rawVal = blurMatch[1].trim()
+    let radius = parseFloat(rawVal) || 0
+    if (rawVal.endsWith("rem") || rawVal.endsWith("em")) {
+      radius = (parseFloat(rawVal) || 0) * 16
+    }
+    if (radius > 0) {
+      effects.push({
+        type: "LAYER_BLUR",
+        radius: Math.round(radius * 10) / 10,
+        visible: true
+      })
+    }
+  }
+
+  return effects
+}
+
+/**
+ * Parses CSS backdrop-filter blur(...) expressions into IREffect[]
+ */
+export function parseCssBackdropFilter(backdropStr: string | null | undefined): IREffect[] {
+  if (!backdropStr || backdropStr === "none") return []
+
+  const effects: IREffect[] = []
+  const blurMatch = backdropStr.match(/\bblur\(([^)]+)\)/i)
+  if (blurMatch && blurMatch[1]) {
+    const rawVal = blurMatch[1].trim()
+    let radius = parseFloat(rawVal) || 0
+    if (rawVal.endsWith("rem") || rawVal.endsWith("em")) {
+      radius = (parseFloat(rawVal) || 0) * 16
+    }
+    if (radius > 0) {
+      effects.push({
+        type: "BACKGROUND_BLUR",
+        radius: Math.round(radius * 10) / 10,
+        visible: true
+      })
     }
   }
 

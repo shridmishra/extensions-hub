@@ -1,7 +1,99 @@
-import type { IRDocument, IRNode } from "../../types/ir"
+import type { IRDocument, IRNode } from "../../types/ir.ts"
 
 /**
- * Resolves an image URL into a base64 Data URL using canvas, direct fetch,
+ * Converts any non-PNG/JPEG Blob into a PNG Data URL using Canvas or ImageBitmap.
+ * Figma's SVG clipboard parser reliably displays PNG and JPEG, but renders WebP as solid black or drops it.
+ */
+export async function blobToPngDataUrl(blob: Blob): Promise<string> {
+  if (typeof document === "undefined") {
+    return blobToDataUrl(blob)
+  }
+
+  if (blob.type === "image/png" || blob.type === "image/jpeg") {
+    return blobToDataUrl(blob)
+  }
+
+  // 1. Decode via createImageBitmap (fast, direct offscreen decoding)
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(blob)
+      const canvas = document.createElement("canvas")
+      canvas.width = bitmap.width
+      canvas.height = bitmap.height
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(bitmap, 0, 0)
+        bitmap.close()
+        const pngData = canvas.toDataURL("image/png")
+        if (pngData && pngData.startsWith("data:image/png")) {
+          return pngData
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Fallback decode via Image element
+  try {
+    const objectUrl = URL.createObjectURL(blob)
+    const img = new Image()
+    img.src = objectUrl
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = reject
+      setTimeout(reject, 3000)
+    })
+    const canvas = document.createElement("canvas")
+    canvas.width = img.naturalWidth || 100
+    canvas.height = img.naturalHeight || 100
+    const ctx = canvas.getContext("2d")
+    if (ctx) {
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(objectUrl)
+      const pngData = canvas.toDataURL("image/png")
+      if (pngData && pngData.startsWith("data:image/png")) {
+        return pngData
+      }
+    }
+    URL.revokeObjectURL(objectUrl)
+  } catch {}
+
+  return blobToDataUrl(blob)
+}
+
+/**
+ * Converts a data:image/webp string into a data:image/png string for Figma compatibility.
+ */
+export async function convertDataUrlToPng(dataUrl: string): Promise<string> {
+  if (typeof document === "undefined" || !dataUrl.startsWith("data:image/webp")) {
+    return dataUrl
+  }
+
+  try {
+    const img = new Image()
+    img.src = dataUrl
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = reject
+      setTimeout(reject, 2500)
+    })
+    const canvas = document.createElement("canvas")
+    canvas.width = img.naturalWidth || 100
+    canvas.height = img.naturalHeight || 100
+    const ctx = canvas.getContext("2d")
+    if (ctx) {
+      ctx.drawImage(img, 0, 0)
+      const png = canvas.toDataURL("image/png")
+      if (png && png.startsWith("data:image/png")) {
+        return png
+      }
+    }
+  } catch {}
+
+  return dataUrl
+}
+
+/**
+ * Resolves an image URL into a base64 PNG Data URL using canvas, direct fetch,
  * or Chrome background service worker messaging.
  */
 export async function resolveImageDataUrl(
@@ -10,9 +102,21 @@ export async function resolveImageDataUrl(
 ): Promise<string | null> {
   if (!url || typeof url !== "string") return null
   const cleanUrl = url.trim()
-  if (cleanUrl.startsWith("data:image/")) return cleanUrl
 
-  // 1. Try canvas extraction if HTMLImageElement is loaded and not tainted
+  if (cleanUrl.startsWith("data:image/png") || cleanUrl.startsWith("data:image/jpeg")) {
+    return cleanUrl
+  }
+  if (cleanUrl.startsWith("data:image/webp")) {
+    return convertDataUrlToPng(cleanUrl)
+  }
+
+  // 1. Try finding already loaded HTMLImageElement in the DOM if not provided
+  if (!imgEl && typeof document !== "undefined") {
+    const allImgs = Array.from(document.querySelectorAll("img"))
+    imgEl = allImgs.find((img) => img.currentSrc === cleanUrl || img.src === cleanUrl)
+  }
+
+  // 2. Try canvas extraction if HTMLImageElement is loaded and not tainted
   if (typeof document !== "undefined" && imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
     try {
       const canvas = document.createElement("canvas")
@@ -22,24 +126,24 @@ export async function resolveImageDataUrl(
       if (ctx) {
         ctx.drawImage(imgEl, 0, 0)
         const data = canvas.toDataURL("image/png")
-        if (data && data.startsWith("data:image")) return data
+        if (data && data.startsWith("data:image/png")) return data
       }
     } catch {}
   }
 
-  // 2. Try direct fetch in current page context
+  // 3. Try direct fetch in current page context and decode to PNG
   if (typeof fetch === "function") {
     try {
       const res = await fetch(cleanUrl, { mode: "cors" })
       if (res.ok) {
         const blob = await res.blob()
-        const dataUrl = await blobToDataUrl(blob)
+        const dataUrl = await blobToPngDataUrl(blob)
         if (dataUrl && dataUrl.startsWith("data:")) return dataUrl
       }
     } catch {}
   }
 
-  // 3. Request background service worker to fetch
+  // 4. Request background service worker to fetch
   if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
     try {
       const response = await new Promise<any>((resolve) => {
@@ -55,6 +159,9 @@ export async function resolveImageDataUrl(
         )
       })
       if (response && response.success && response.dataUrl) {
+        if (response.dataUrl.startsWith("data:image/webp")) {
+          return convertDataUrlToPng(response.dataUrl)
+        }
         return response.dataUrl
       }
     } catch {}
@@ -87,9 +194,12 @@ export async function embedImagesInIRDocument(doc: IRDocument): Promise<IRDocume
     if (node.fills && node.fills.length > 0) {
       for (const fill of node.fills) {
         if (fill.type === "IMAGE" && fill.url) {
-          if (fill.url.startsWith("data:")) {
+          if (fill.url.startsWith("data:image/webp")) {
+            // Needs WebP to PNG conversion
+            urlsToFetch.add(fill.url)
+          } else if (fill.url.startsWith("data:")) {
             if (!fill.dataUrl) fill.dataUrl = fill.url
-          } else if (!fill.dataUrl) {
+          } else if (!fill.dataUrl || fill.dataUrl.startsWith("data:image/webp")) {
             urlsToFetch.add(fill.url)
           }
         }
@@ -131,7 +241,7 @@ export async function embedImagesInIRDocument(doc: IRDocument): Promise<IRDocume
 
     if (node.fills && node.fills.length > 0) {
       for (const fill of node.fills) {
-        if (fill.type === "IMAGE" && fill.url && !fill.dataUrl) {
+        if (fill.type === "IMAGE" && fill.url) {
           const resolved = urlMap.get(fill.url)
           if (resolved) {
             fill.dataUrl = resolved

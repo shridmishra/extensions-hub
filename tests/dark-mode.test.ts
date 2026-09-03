@@ -138,4 +138,27 @@ describe("Dark & Light Mode Storage & Configuration Tests", () => {
     assert.strictEqual(detectGitHubTheme("auto", false), "light")
     assert.strictEqual(detectGitHubTheme(null, true), "dark")
   })
+
+  it("should detect Twitter / X themes (Dim, Lights Out, Light) correctly", () => {
+    const detectTwitterTheme = (styleAttr: string, themeColorMeta: string | null) => {
+      if (styleAttr.includes("color-scheme: dark")) return "dark"
+      if (styleAttr.includes("color-scheme: light")) return "light"
+      if (themeColorMeta === "#000000" || themeColorMeta === "#15202b") return "dark"
+      if (themeColorMeta === "#ffffff") return "light"
+      return "dark" // Default fallback on X
+    }
+
+    assert.strictEqual(detectTwitterTheme("color-scheme: dark;", null), "dark")
+    assert.strictEqual(detectTwitterTheme("color-scheme: light;", null), "light")
+    assert.strictEqual(detectTwitterTheme("", "#000000"), "dark") // Lights out
+    assert.strictEqual(detectTwitterTheme("", "#15202b"), "dark") // Dim mode
+    assert.strictEqual(detectTwitterTheme("", "#ffffff"), "light") // Light mode
+  })
+
+  it("should generate proper target modes for Twitter / X", () => {
+    const getTargetMode = (nativeTheme: "dark" | "light") => (nativeTheme === "dark" ? "light" : "dark")
+
+    assert.strictEqual(getTargetMode("dark"), "light", "When X is in dark mode, toggling should target Force Light")
+    assert.strictEqual(getTargetMode("light"), "dark", "When X is in light mode, toggling should target Force Dark")
+  })
 })

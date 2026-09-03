@@ -6,10 +6,9 @@ import { Storage } from "@plasmohq/storage"
 import { ExtensionStorage } from "../lib/storage"
 import { copyToClipboard } from "../lib/utils"
 import { getColorName } from "../lib/color-names"
-import { Check, X, Pipette, MousePointer } from "lucide-react"
-import Button from "../components/ui/Button"
+import { Check, X } from "lucide-react"
 import IconButton from "../components/ui/IconButton"
-import ActiveToolBanner from "../components/ui/ActiveToolBanner"
+import ColorPickerIslandToolbar, { type ColorPickerToolbarMode } from "../components/extensions/ColorPickerIslandToolbar"
 
 export const config: PlasmoCSConfig = {
   matches: ["http://*/*", "https://*/*"],
@@ -117,14 +116,40 @@ function hexToHsl(hex: string): string {
   return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`
 }
 
+function getElementColor(target: HTMLElement): { hex: string; name: string } {
+  const computed = window.getComputedStyle(target)
+  let color = computed.backgroundColor
+  if (!color || color === "transparent" || color === "rgba(0, 0, 0, 0)") {
+    color = computed.color
+  }
+  if (!color || color === "transparent" || color === "rgba(0, 0, 0, 0)") {
+    let cur = target.parentElement
+    while (cur && cur !== document.body) {
+      const c = window.getComputedStyle(cur).backgroundColor
+      if (c && c !== "transparent" && c !== "rgba(0, 0, 0, 0)") {
+        color = c
+        break
+      }
+      cur = cur.parentElement
+    }
+  }
+  const hex = rgbToHex(color)
+  const name = getColorName(hex)
+  return { hex, name }
+}
+
 export default function ColorPickerContentScript() {
   const [isActive, setIsActive] = useState(false)
+  const [currentMode, setCurrentMode] = useState<ColorPickerToolbarMode>("pick-color")
+  const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null)
+  const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null)
+  const [hoveredColor, setHoveredColor] = useState<{ hex: string; name: string } | null>(null)
   const [toastColor, setToastColor] = useState<string | null>(null)
   const [toastRgb, setToastRgb] = useState<string>("")
   const [isDarkMode, setIsDarkMode] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
 
-  // Watch activation state, theme, and mutual exclusion with font_finder
+  // Watch activation state, theme, and mutual exclusion
   useEffect(() => {
     storage.get<boolean>("color_picker_active").then((val) => {
       setIsActive(!!val)
@@ -135,9 +160,27 @@ export default function ColorPickerContentScript() {
         setIsActive(!!c.newValue)
       },
       font_finder_active: (c: { newValue?: boolean }) => {
-        // Mutual exclusion: if font finder starts, color picker deactivates
         if (c.newValue) {
           setIsActive(false)
+          setHoveredElement(null)
+          setHoveredRect(null)
+          setHoveredColor(null)
+        }
+      },
+      css_picker_active: (c: { newValue?: boolean }) => {
+        if (c.newValue) {
+          setIsActive(false)
+          setHoveredElement(null)
+          setHoveredRect(null)
+          setHoveredColor(null)
+        }
+      },
+      figma_picker_active: (c: { newValue?: boolean }) => {
+        if (c.newValue) {
+          setIsActive(false)
+          setHoveredElement(null)
+          setHoveredRect(null)
+          setHoveredColor(null)
         }
       }
     }
@@ -159,7 +202,10 @@ export default function ColorPickerContentScript() {
 
       if (message?.type === "START_COLOR_PICKER") {
         setIsActive(true)
-        setToastColor(null)
+        setCurrentMode("pick-color")
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setHoveredColor(null)
         storage.set("color_picker_active", true)
         sendResponse({ success: true })
         return true
@@ -173,6 +219,9 @@ export default function ColorPickerContentScript() {
         message?.type === "START_FIGMA_PICKER"
       ) {
         setIsActive(false)
+        setHoveredElement(null)
+        setHoveredRect(null)
+        setHoveredColor(null)
         sendResponse({ success: true })
         return true
       }
@@ -216,6 +265,25 @@ export default function ColorPickerContentScript() {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [isActive])
 
+  // Scroll & resize handler
+  useEffect(() => {
+    const handleScrollOrResize = () => {
+      if (hoveredElement) {
+        setHoveredRect(hoveredElement.getBoundingClientRect())
+      }
+    }
+
+    if (isActive && hoveredElement) {
+      window.addEventListener("scroll", handleScrollOrResize, { passive: true })
+      window.addEventListener("resize", handleScrollOrResize, { passive: true })
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize)
+      window.removeEventListener("resize", handleScrollOrResize)
+    }
+  }, [isActive, hoveredElement])
+
   const showToast = (hex: string, rgb: string) => {
     setToastColor(hex)
     setToastRgb(rgb)
@@ -235,7 +303,26 @@ export default function ColorPickerContentScript() {
 
     showToast(hex, rgb)
     setIsActive(false)
+    setHoveredElement(null)
+    setHoveredRect(null)
+    setHoveredColor(null)
     storage.set("color_picker_active", false)
+  }
+
+  const handleMouseMoveOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!overlayRef.current) return
+
+    overlayRef.current.style.setProperty("pointer-events", "none", "important")
+    const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
+    overlayRef.current.style.setProperty("pointer-events", "auto", "important")
+
+    if (!target || target.closest(".hub-extension-root")) return
+
+    if (target !== hoveredElement) {
+      setHoveredElement(target)
+      setHoveredRect(target.getBoundingClientRect())
+      setHoveredColor(getElementColor(target))
+    }
   }
 
   const handleClickOverlay = async (e: React.MouseEvent<HTMLDivElement>) => {
@@ -250,7 +337,7 @@ export default function ColorPickerContentScript() {
 
     if (!target || target.closest(".hub-extension-root")) return
 
-    // Try native EyeDropper
+    // Try native EyeDropper if available
     if ("EyeDropper" in window) {
       try {
         const eyeDropper = new (window as any).EyeDropper()
@@ -264,23 +351,51 @@ export default function ColorPickerContentScript() {
       }
     }
 
-    // Fallback to computed element color
-    const computed = window.getComputedStyle(target)
-    let color = computed.backgroundColor
-    if (!color || color === "transparent" || color === "rgba(0, 0, 0, 0)") {
-      color = computed.color
-    }
-    await handlePickColor(rgbToHex(color))
+    const { hex } = getElementColor(target)
+    await handlePickColor(hex)
   }
 
   const handleClose = () => {
     setIsActive(false)
+    setHoveredElement(null)
+    setHoveredRect(null)
+    setHoveredColor(null)
     storage.set("color_picker_active", false)
   }
 
+  if (!isActive && !toastColor) return null
+
+  const hoverTag = hoveredElement?.tagName.toLowerCase() || ""
+  const hoverClass =
+    hoveredElement?.className && typeof hoveredElement.className === "string"
+      ? `.${hoverElementClass(hoveredElement.className)}`
+      : ""
+  const hoverHex = hoveredColor?.hex || "#FFFFFF"
+  const hoverColorName = hoveredColor?.name || ""
+
+  const pillTop = hoveredRect
+    ? hoveredRect.top < 68
+      ? hoveredRect.bottom + 8
+      : Math.max(68, hoveredRect.top - 26)
+    : 0
+
+  const pillLeft = hoveredRect
+    ? Math.max(12, Math.min(window.innerWidth - 240, hoveredRect.left))
+    : 0
+
   return (
     <div className={`hub-extension-root ${isDarkMode ? "dark" : ""} text-neutral-900 dark:text-neutral-100 antialiased`}>
-      {/* 1. Transparent Overlay across entire viewport with crosshair cursor (NO mouse-follower box) */}
+      {/* 1. Seamless Floating Island Toolbar Centered at Top */}
+      {isActive && (
+        <ColorPickerIslandToolbar
+          currentMode={currentMode}
+          onModeChange={setCurrentMode}
+          onClose={handleClose}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {/* 2. Transparent Overlay across entire viewport with crosshair cursor */}
       {isActive && (
         <div
           ref={overlayRef}
@@ -295,23 +410,58 @@ export default function ColorPickerContentScript() {
             zIndex: 2147483640,
             cursor: "crosshair"
           }}
+          onMouseMove={handleMouseMoveOverlay}
           onClick={handleClickOverlay}
         />
       )}
 
-      {/* 2. Top Floating Active Island Pill */}
-      {isActive && (
-        <ActiveToolBanner
-          title="Color Picker"
-          icon={<Pipette size={13} className="text-neutral-900 dark:text-neutral-100" />}
-          instruction="Click element to pick"
-          instructionIcon={<MousePointer size={12} />}
-          onClose={handleClose}
-          isDarkMode={isDarkMode}
-        />
+      {/* 3. Live Hover Bounding Box */}
+      {isActive && hoveredRect && (
+        <>
+          <div
+            style={{
+              top: `${hoveredRect.top}px`,
+              left: `${hoveredRect.left}px`,
+              width: `${hoveredRect.width}px`,
+              height: `${hoveredRect.height}px`,
+              position: "fixed",
+              zIndex: 2147483645,
+              pointerEvents: "none"
+            }}
+            className="rounded-xs transition-all duration-75 border-2 border-pink-500 bg-pink-500/10"
+          />
+
+          {/* Hover Tag Pill with Live Color Swatch */}
+          <div
+            style={{
+              top: `${pillTop}px`,
+              left: `${pillLeft}px`,
+              position: "fixed",
+              zIndex: 2147483646,
+              pointerEvents: "none"
+            }}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-900 text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]"
+          >
+            <span>&lt;{hoverTag}&gt;{hoverClass}</span>
+            <span className="opacity-40">|</span>
+            <span
+              className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-2xs border border-white/20"
+              style={{ backgroundColor: hoverHex }}
+            />
+            <span className="font-mono">{hoverHex}</span>
+            {hoverColorName && (
+              <>
+                <span className="opacity-40">•</span>
+                <span>{hoverColorName}</span>
+              </>
+            )}
+            <span className="opacity-40">|</span>
+            <span className="text-[10px] font-extrabold text-pink-400">Click to Pick</span>
+          </div>
+        </>
       )}
 
-      {/* 3. Floating Toast Notification when Color is Picked */}
+      {/* 4. Floating Toast Notification when Color is Picked */}
       {toastColor && (
         <div
           style={{ pointerEvents: "auto" }}
@@ -350,4 +500,9 @@ export default function ColorPickerContentScript() {
       )}
     </div>
   )
+}
+
+function hoverElementClass(className: string): string {
+  if (!className || typeof className !== "string") return ""
+  return className.trim().split(/\s+/)[0] || ""
 }

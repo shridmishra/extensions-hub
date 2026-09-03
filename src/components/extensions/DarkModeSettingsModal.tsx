@@ -305,10 +305,11 @@ export const DarkModeSettingsModal: React.FC<DarkModeSettingsModalProps> = ({
 
       {/* ── THEME CUSTOMIZATION & ADJUSTMENTS ACCORDION ── */}
       <div className="flex flex-col rounded-2xl bg-neutral-50 dark:bg-neutral-900 shadow-2xs overflow-hidden shrink-0">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-          className="flex items-center justify-between px-3 py-2 w-full text-left bg-neutral-100/60 dark:bg-neutral-850/60 hover:bg-neutral-100 dark:hover:bg-neutral-850 transition-colors"
+          className="flex items-center justify-between px-3 py-2 w-full text-left bg-neutral-100/60 dark:bg-neutral-850/60 hover:bg-neutral-100 dark:hover:bg-neutral-850 rounded-none h-auto transition-colors"
         >
           <div className="flex items-center gap-1.5">
             <SlidersHorizontal size={13} className="text-neutral-500" />
@@ -321,7 +322,7 @@ export const DarkModeSettingsModal: React.FC<DarkModeSettingsModalProps> = ({
           ) : (
             <ChevronDown size={13} className="text-neutral-400 stroke-[2.5]" />
           )}
-        </button>
+        </Button>
 
         {showAdvancedSettings && (
           <div className="p-3 flex flex-col gap-3">

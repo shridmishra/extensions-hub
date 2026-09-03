@@ -58,6 +58,7 @@ export interface IRGradientRadialFill {
 export interface IRImageFill {
   type: "IMAGE";
   scaleMode: "FILL" | "FIT" | "CROP" | "TILE";
+  objectPosition?: string;
   imageHash?: string;
   dataUrl?: string;
   url?: string;
@@ -119,6 +120,8 @@ export interface IRTextStyle {
   textDecoration?: "NONE" | "UNDERLINE" | "STRIKETHROUGH";
   textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE";
   fontVariantNumeric?: string;
+  hasLeadingSpace?: boolean;
+  hasTrailingSpace?: boolean;
   fills?: IRFill[];
 }
 
@@ -136,8 +139,12 @@ export interface IRMetadata {
   className?: string;
   id?: string;
   isClipped?: boolean;
+  isTextClipped?: boolean;
   originalClipPath?: string;
   isPseudoElement?: "before" | "after";
+  zIndex?: number;
+  position?: "static" | "relative" | "absolute" | "fixed" | "sticky";
+  objectPosition?: string;
   warnings?: string[];
   computedStyles?: Record<string, string>;
 }

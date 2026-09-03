@@ -5,14 +5,15 @@ import type {
   IRStroke,
   IREffect,
   IRColor
-} from "../../types/ir"
-import { cleanFontFamilyName, isGenericFontFamily } from "../css/fonts"
-import { createRoundedRectPath } from "../clip-path/geometry"
+} from "../../types/ir.ts"
+import { cleanFontFamilyName, isGenericFontFamily } from "../css/fonts.ts"
+import { createRoundedRectPath } from "../clip-path/geometry.ts"
 
 interface SvgBuildContext {
   defs: string[]
   defIdMap: Map<string, string>
   counter: number
+  isDarkTheme?: boolean
 }
 
 /**
@@ -22,10 +23,18 @@ export function convertIRToSvg(doc: IRDocument): string {
   const width = Math.max(1, doc.viewport.width)
   const height = Math.max(1, doc.viewport.height)
 
+  let isDarkTheme = false
+  const rootSolid = doc.rootNode?.fills?.find((f) => f.type === "SOLID")
+  if (rootSolid && rootSolid.type === "SOLID") {
+    const lum = 0.299 * rootSolid.color.r + 0.587 * rootSolid.color.g + 0.114 * rootSolid.color.b
+    isDarkTheme = lum < 0.4
+  }
+
   const ctx: SvgBuildContext = {
     defs: [],
     defIdMap: new Map(),
-    counter: 0
+    counter: 0,
+    isDarkTheme
   }
 
   const fontFamilies = new Set<string>()
@@ -42,9 +51,15 @@ export function convertIRToSvg(doc: IRDocument): string {
   fontFamilies.forEach((family) => {
     const cleanFam = cleanFontFamilyName(family)
     if (cleanFam && !isGenericFontFamily(cleanFam)) {
-      fontImports.push(
-        `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(cleanFam).replace(/%20/g, "+")}:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap');`
-      )
+      if (cleanFam.toLowerCase() === "satoshi") {
+        fontImports.push(
+          `@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300&display=swap');`
+        )
+      } else {
+        fontImports.push(
+          `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(cleanFam).replace(/%20/g, "+")}:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap');`
+        )
+      }
     }
   })
 
@@ -82,6 +97,218 @@ function collectFontsFromNode(node: IRNode, fontSet: Set<string>): void {
   }
 }
 
+interface InlineTextSpan {
+  text: string
+  fontFamily: string
+  fontSize: number
+  fontWeight: number
+  fontStyle: string
+  letterSpacing: string
+  textDecoration: string
+  fill: string
+  x: number
+  y: number
+  width: number
+  height: number
+  hasLeadingSpace?: boolean
+  hasTrailingSpace?: boolean
+}
+
+function tryExtractInlineTextSpans(node: IRNode, ctx: SvgBuildContext): InlineTextSpan[][] | null {
+  if (!node.children || node.children.length < 2) return null
+
+  // 1. Never merge structural containers (navbars, menus, lists, toolbars)
+  const nodeTag = (node.metadata?.tagName || "").toUpperCase()
+  if (
+    nodeTag === "NAV" ||
+    nodeTag === "HEADER" ||
+    nodeTag === "FOOTER" ||
+    nodeTag === "UL" ||
+    nodeTag === "OL" ||
+    nodeTag === "MENU"
+  ) {
+    return null
+  }
+
+  const nodeNameLower = (node.name || "").toLowerCase()
+  if (
+    nodeNameLower.includes("nav") ||
+    nodeNameLower.includes("menu") ||
+    nodeNameLower.includes("tab") ||
+    nodeNameLower.includes("header") ||
+    nodeNameLower.includes("toolbar")
+  ) {
+    return null
+  }
+
+  // 2. Never merge if any child is an interactive link or button
+  const hasInteractiveChildren = node.children.some((c) => {
+    const tag = (c.metadata?.tagName || "").toUpperCase()
+    return tag === "A" || tag === "BUTTON"
+  })
+  if (hasInteractiveChildren) {
+    return null
+  }
+
+
+  // If this container has non-text visuals, don't merge
+  const hasSolidBg = node.fills?.some(
+    (f) => f.type === "SOLID" && f.visible && (f.opacity ?? f.color.a ?? 1) > 0.01
+  )
+  const hasGradBg = node.fills?.some(
+    (f) => (f.type === "GRADIENT_LINEAR" || f.type === "GRADIENT_RADIAL") && f.visible
+  )
+  const isTextClipped = !!node.metadata?.isTextClipped
+  if (!isTextClipped && (hasSolidBg || hasGradBg)) return null
+  if (node.strokes && node.strokes.length > 0) return null
+  if (node.vectorData?.svgPath) return null
+
+  const spans: InlineTextSpan[] = []
+
+  for (let i = 0; i < node.children.length; i++) {
+    const child = node.children[i]
+    if (child.type === "TEXT" && child.textData) {
+      const textData = child.textData
+      const chars = textData.characters || ""
+      if (!chars.trim()) continue
+
+      let textFill = formatFillToSvg(textData.fills?.[0], ctx, true)
+      if (textFill === "none") {
+        textFill = ctx.isDarkTheme ? "rgb(243, 244, 246)" : "rgb(17, 24, 39)"
+      }
+
+      spans.push({
+        text: chars,
+        fontFamily: cleanFontFamilyName(textData.fontFamily) || "Inter",
+        fontSize: textData.fontSize || 14,
+        fontWeight: textData.fontWeight || 400,
+        fontStyle: textData.fontStyle === "italic" ? ` font-style="italic"` : "",
+        letterSpacing: textData.letterSpacingPx ? ` letter-spacing="${round2(textData.letterSpacingPx)}px"` : "",
+        textDecoration: textData.textDecoration === "UNDERLINE" ? ` text-decoration="underline"` : "",
+        fill: textFill,
+        x: child.box.x,
+        y: child.box.y,
+        width: child.box.width,
+        height: child.box.height,
+        hasLeadingSpace: textData.hasLeadingSpace,
+        hasTrailingSpace: textData.hasTrailingSpace
+      })
+    } else if (child.type === "FRAME") {
+      const childHasBg = child.fills?.some(
+        (f) => f.visible && (f.type === "SOLID" ? (f.opacity ?? f.color.a ?? 1) > 0.01 : true)
+      )
+      const childIsTextClipped = !!child.metadata?.isTextClipped
+      if (!childIsTextClipped && childHasBg) return null
+      if (child.strokes && child.strokes.length > 0) return null
+      if (child.vectorData?.svgPath) return null
+
+      const textGrandchildren = child.children?.filter((c) => c.type === "TEXT" && c.textData) || []
+      if (textGrandchildren.length !== 1 || (child.children && child.children.length !== 1)) {
+        return null
+      }
+
+      const grandText = textGrandchildren[0]
+      const textData = grandText.textData!
+      const chars = textData.characters || ""
+      if (!chars.trim()) continue
+
+      let textFill = formatFillToSvg(textData.fills?.[0], ctx, true)
+      if (textFill === "none" && child.fills && child.fills.length > 0) {
+        textFill = formatFillToSvg(child.fills[0], ctx, true)
+      }
+      if (textFill === "none") {
+        textFill = ctx.isDarkTheme ? "rgb(243, 244, 246)" : "rgb(17, 24, 39)"
+      }
+
+      spans.push({
+        text: chars,
+        fontFamily: cleanFontFamilyName(textData.fontFamily) || "Inter",
+        fontSize: textData.fontSize || 14,
+        fontWeight: textData.fontWeight || 400,
+        fontStyle: textData.fontStyle === "italic" ? ` font-style="italic"` : "",
+        letterSpacing: textData.letterSpacingPx ? ` letter-spacing="${round2(textData.letterSpacingPx)}px"` : "",
+        textDecoration: textData.textDecoration === "UNDERLINE" ? ` text-decoration="underline"` : "",
+        fill: textFill,
+        x: child.box.x,
+        y: child.box.y,
+        width: child.box.width,
+        height: child.box.height,
+        hasLeadingSpace: textData.hasLeadingSpace,
+        hasTrailingSpace: textData.hasTrailingSpace
+      })
+    } else {
+      return null
+    }
+  }
+
+  if (spans.length < 2) return null
+
+  // Group spans into distinct lines by y coordinate
+  const lineGroups: InlineTextSpan[][] = []
+  for (const span of spans) {
+    let placed = false
+    for (const line of lineGroups) {
+      if (Math.abs(span.y - line[0].y) < Math.max(span.fontSize, line[0].fontSize) * 0.7) {
+        line.push(span)
+        placed = true
+        break
+      }
+    }
+    if (!placed) {
+      lineGroups.push([span])
+    }
+  }
+
+  return lineGroups
+}
+
+function renderMergedInlineTextSpans(
+  lineGroups: InlineTextSpan[][],
+  ctx: SvgBuildContext
+): string {
+  const lineStrings: string[] = []
+
+  for (const line of lineGroups) {
+    line.sort((a, b) => a.x - b.x)
+
+    const firstSpan = line[0]
+    const fontSize = firstSpan.fontSize
+    const fontFamilyAttr = escapeXml(firstSpan.fontFamily)
+    const fontWeight = firstSpan.fontWeight
+    const startX = firstSpan.x
+    const centerY = firstSpan.y + firstSpan.height / 2
+    const baselineY = centerY + fontSize * 0.35
+
+    const tspansMarkup = line
+      .map((span, idx) => {
+        let content = span.text
+        if (span.hasLeadingSpace && !content.startsWith(" ") && idx > 0) {
+          content = " " + content
+        }
+        if (idx < line.length - 1) {
+          const nextSpan = line[idx + 1]
+          const gap = nextSpan.x - (span.x + span.width)
+          const needsSpace =
+            gap > 1 || span.hasTrailingSpace || nextSpan.hasLeadingSpace
+          if (needsSpace && !content.endsWith(" ")) {
+            content += " "
+          }
+        }
+        const fontStyleAttr = span.fontStyle
+        const letterSpacingAttr = span.letterSpacing
+        const textDecorationAttr = span.textDecoration
+        return `<tspan fill="${span.fill}"${fontStyleAttr}${letterSpacingAttr}${textDecorationAttr}>${escapeXml(content)}</tspan>`
+      })
+      .join("")
+
+    lineStrings.push(
+      `    <text x="${round2(startX)}" y="${round2(baselineY)}" text-anchor="start" font-family="${fontFamilyAttr}" font-size="${fontSize}" font-weight="${fontWeight}">${tspansMarkup}</text>`
+    )
+  }
+
+  return lineStrings.join("\n")
+}
+
 function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
   if (!node) return ""
 
@@ -94,12 +321,27 @@ function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
   // 1. TEXT NODE
   if (node.type === "TEXT" && node.textData) {
     const textData = node.textData
-    let textFill = formatFillToSvg(textData.fills?.[0], ctx)
-    if (textFill === "none") {
-      textFill = formatFillToSvg(node.fills?.[0], ctx)
+    let textFill = formatFillToSvg(textData.fills?.[0], ctx, true)
+    if (textFill === "none" && textData.fills && textData.fills.length > 1) {
+      for (let i = 1; i < textData.fills.length; i++) {
+        const candidate = formatFillToSvg(textData.fills[i], ctx, true)
+        if (candidate !== "none") {
+          textFill = candidate
+          break
+        }
+      }
+    }
+    if (textFill === "none" && node.fills && node.fills.length > 0) {
+      for (const f of node.fills) {
+        const candidate = formatFillToSvg(f, ctx, true)
+        if (candidate !== "none") {
+          textFill = candidate
+          break
+        }
+      }
     }
     if (textFill === "none") {
-      textFill = "rgb(250, 250, 250)"
+      textFill = ctx.isDarkTheme ? "rgb(243, 244, 246)" : "rgb(17, 24, 39)"
     }
     const fontSize = textData.fontSize || 14
 
@@ -138,12 +380,12 @@ function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
 
     if (chars.includes("\n")) {
       const lines = chars.split("\n")
-      const lineHeight = textData.lineHeightPx || fontSize * 1.25
+      const lineHeight = textData.lineHeightPx || fontSize * 1.3
       const startBaselineY = y + fontSize * 0.85
       const tspans = lines
         .map((line, idx) => {
-          const dy = idx === 0 ? 0 : round2(lineHeight)
-          return `<tspan x="${round2(textX)}" dy="${dy}">${escapeXml(line)}</tspan>`
+          const dyAttr = idx === 0 ? "" : ` dy="${round2(lineHeight)}"`
+          return `<tspan x="${round2(textX)}"${dyAttr}>${escapeXml(line)}</tspan>`
         })
         .join("")
       return `  <text x="${round2(textX)}" y="${round2(startBaselineY)}" text-anchor="${textAnchor}" font-family="${fontFamilyAttr}" font-size="${fontSize}" font-weight="${fontWeight}"${fontStyle}${letterSpacing}${textDecoration} fill="${textFill}"${opacity}>${tspans}</text>`
@@ -174,7 +416,8 @@ function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
   // 3. SVG NODE
   if (node.type === "SVG" && node.svgContent) {
     const transformAttr = x !== 0 || y !== 0 ? ` transform="translate(${round2(x)}, ${round2(y)})"` : ""
-    return `  <g${transformAttr}${opacity} data-name="${escapeXml(node.name)}">\n    ${node.svgContent}\n  </g>`
+    const unwrapped = unwrapSvgToGroup(node.svgContent, width, height, ctx)
+    return `  <g${transformAttr}${opacity} data-name="${escapeXml(node.name)}">\n    ${unwrapped}\n  </g>`
   }
 
   // 4. IMAGE NODE
@@ -237,13 +480,14 @@ function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
       stroke.bottom === stroke.left)
 
   let bgMarkup = ""
+  const isTextClipped = !!node.metadata?.isTextClipped
 
-  if ((hasBackground || hasStroke || hasEffects) && width > 0 && height > 0) {
+  if (!isTextClipped && (hasBackground || hasStroke || hasEffects) && width > 0 && height > 0) {
     const strokeAttr = isUniformStroke ? formatStrokeToSvg(stroke) : ""
     const radiusAttr = formatCornerRadiusAttr(node.cornerRadius, width, height)
 
-    if (hasSolidBg || (!hasGradBg && !hasImgBg && hasEffects)) {
-      const effectiveSolid = hasSolidBg ? solidFillAttr : "rgb(255, 255, 255)"
+    if (hasSolidBg || hasStroke || (!hasGradBg && !hasImgBg && hasEffects)) {
+      const effectiveSolid = hasSolidBg ? solidFillAttr : "none"
       const applyFilter = !hasGradBg ? filterAttr : ""
       const applyStroke = !hasGradBg ? strokeAttr : ""
 
@@ -273,7 +517,14 @@ function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
     if (hasImgBg) {
       const bgImgUrl = imgFill.dataUrl || imgFill.url
       const imgClip = childrenClipId ? ` clip-path="url(#${childrenClipId})"` : ""
-      bgMarkup += `    <image href="${escapeXml(bgImgUrl)}" x="0" y="0" width="${round2(width)}" height="${round2(height)}"${radiusAttr}${imgClip} preserveAspectRatio="xMidYMid slice" />\n`
+      const isDataUrl = (bgImgUrl || "").startsWith("data:")
+      const bgAspect = isDataUrl
+        ? "none"
+        : getPreserveAspectRatio(
+            imgFill?.scaleMode,
+            imgFill?.objectPosition || node.metadata?.objectPosition
+          )
+      bgMarkup += `    <image href="${escapeXml(bgImgUrl)}" xlink:href="${escapeXml(bgImgUrl)}" x="0" y="0" width="${round2(width)}" height="${round2(height)}"${radiusAttr}${imgClip} preserveAspectRatio="${bgAspect}" />\n`
     }
 
     if (
@@ -303,16 +554,21 @@ function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
 
   let childrenSvg = ""
   if (node.children && node.children.length > 0) {
-    const rendered = node.children
-      .map((child) => renderNodeToSvg(child, ctx))
-      .filter(Boolean)
-      .join("\n")
+    const inlineLines = tryExtractInlineTextSpans(node, ctx)
+    if (inlineLines && inlineLines.length > 0) {
+      childrenSvg = renderMergedInlineTextSpans(inlineLines, ctx) + "\n"
+    } else {
+      const rendered = node.children
+        .map((child) => renderNodeToSvg(child, ctx))
+        .filter(Boolean)
+        .join("\n")
 
-    if (rendered) {
-      if (childrenClipId) {
-        childrenSvg = `    <g clip-path="url(#${childrenClipId})">\n${rendered}\n    </g>\n`
-      } else {
-        childrenSvg = `${rendered}\n`
+      if (rendered) {
+        if (childrenClipId) {
+          childrenSvg = `    <g clip-path="url(#${childrenClipId})">\n${rendered}\n    </g>\n`
+        } else {
+          childrenSvg = `${rendered}\n`
+        }
       }
     }
   }
@@ -320,6 +576,26 @@ function renderNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
   const transformAttr = x !== 0 || y !== 0 ? ` transform="translate(${round2(x)}, ${round2(y)})"` : ""
 
   return `  <g id="${escapeXml(node.id)}" data-name="${escapeXml(node.name)}"${transformAttr}${opacity}>\n${bgMarkup}${childrenSvg}  </g>`
+}
+
+function getPreserveAspectRatio(scaleMode?: string, objectPosition?: string): string {
+  const objectPos = (objectPosition || "").toLowerCase().trim()
+  const posParts = objectPos.split(/\s+/)
+  let alignY = "YMid"
+  if (objectPos.includes("bottom") || posParts[1] === "100%") {
+    alignY = "YMax"
+  } else if (objectPos.includes("top") || posParts[1] === "0%" || posParts[1] === "0") {
+    alignY = "YMin"
+  }
+
+  let alignX = "xMid"
+  if (objectPos.includes("left") || posParts[0] === "0%" || posParts[0] === "0") {
+    alignX = "xMin"
+  } else if (objectPos.includes("right") || posParts[0] === "100%") {
+    alignX = "xMax"
+  }
+
+  return scaleMode === "FIT" ? `${alignX}${alignY} meet` : `${alignX}${alignY} slice`
 }
 
 function renderImageNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
@@ -365,7 +641,15 @@ function renderImageNodeToSvg(node: IRNode, ctx: SvgBuildContext): string {
         : `    <rect x="0" y="0" width="${round2(width)}" height="${round2(height)}" fill="none"${strokeAttr}${radiusAttr} />\n`
       : ""
 
-    return `  <g id="${escapeXml(node.id)}" data-name="${escapeXml(node.name)}"${transformAttr}${filterAttr}${opacity}>\n    <image href="${escapeXml(url)}" x="0" y="0" width="${round2(width)}" height="${round2(height)}"${clipAttr} preserveAspectRatio="xMidYMid slice" />\n${strokeMarkup}  </g>`
+    const isDataUrl = (url || "").startsWith("data:")
+    const preserveAspect = isDataUrl
+      ? "none"
+      : getPreserveAspectRatio(
+          imgFill?.scaleMode,
+          imgFill?.objectPosition || node.metadata?.objectPosition
+        )
+
+    return `  <g id="${escapeXml(node.id)}" data-name="${escapeXml(node.name)}"${transformAttr}${filterAttr}${opacity}>\n    <image href="${escapeXml(url)}" xlink:href="${escapeXml(url)}" x="0" y="0" width="${round2(width)}" height="${round2(height)}"${clipAttr} preserveAspectRatio="${preserveAspect}" />\n${strokeMarkup}  </g>`
   }
 
   if (isCircle) {
@@ -445,30 +729,86 @@ function formatCornerRadiusAttr(
   return ""
 }
 
-function formatFillToSvg(fill: IRFill | undefined, ctx: SvgBuildContext): string {
+function getRepresentativeGradientColor(fill: IRFill): string {
+  if (
+    (fill.type === "GRADIENT_LINEAR" || fill.type === "GRADIENT_RADIAL") &&
+    fill.gradientStops &&
+    fill.gradientStops.length > 0
+  ) {
+    const stops = fill.gradientStops
+    let bestColor = stops[0].color
+    let maxSat = -1
+
+    for (const stop of stops) {
+      const { r, g, b } = stop.color
+      const max = Math.max(r, g, b)
+      const min = Math.min(r, g, b)
+      const sat = max === 0 ? 0 : (max - min) / max
+      if (sat > maxSat) {
+        maxSat = sat
+        bestColor = stop.color
+      }
+    }
+
+    if (maxSat <= 0.08 && stops.length >= 2) {
+      const avgR = stops.reduce((sum, s) => sum + s.color.r, 0) / stops.length
+      const avgG = stops.reduce((sum, s) => sum + s.color.g, 0) / stops.length
+      const avgB = stops.reduce((sum, s) => sum + s.color.b, 0) / stops.length
+      const avgA = stops.reduce((sum, s) => sum + (s.color.a ?? 1), 0) / stops.length
+      return formatRgba({ r: avgR, g: avgG, b: avgB, a: avgA }, fill.opacity)
+    }
+
+    return formatRgba(bestColor, fill.opacity)
+  }
+  return "rgb(17, 24, 39)"
+}
+
+function formatFillToSvg(fill: IRFill | undefined, ctx: SvgBuildContext, isText: boolean = false): string {
   if (!fill || !fill.visible) {
     return "none"
   }
 
   if (fill.type === "SOLID") {
+    const effectiveAlpha =
+      fill.opacity !== undefined ? fill.opacity : fill.color.a !== undefined ? fill.color.a : 1
+    if (effectiveAlpha <= 0.01) {
+      return "none"
+    }
     return formatRgba(fill.color, fill.opacity)
   }
 
   if (fill.type === "GRADIENT_LINEAR") {
+    if (isText) {
+      // Figma SVG importer does not support url(#grad_linear) on <text> elements
+      // and falls back to black (#000000). Use representative gradient color.
+      return getRepresentativeGradientColor(fill)
+    }
+
     const id = `grad_linear_${++ctx.counter}`
     const [a, b, c, d, tx, ty] = fill.gradientTransform
 
-    const x1 = Math.round(tx * 100)
-    const y1 = Math.round(ty * 100)
-    const x2 = Math.round((tx + a) * 100)
-    const y2 = Math.round((ty + b) * 100)
+    let x1 = Math.round(tx * 100)
+    let y1 = Math.round(ty * 100)
+    let x2 = Math.round((tx + a) * 100)
+    let y2 = Math.round((ty + b) * 100)
+
+    if (x1 === x2 && y1 === y2) {
+      x1 = 0
+      y1 = 0
+      x2 = 0
+      y2 = 100
+    }
 
     const stopsXml = fill.gradientStops
       .map((s) => {
         const offset = Math.round(s.position * 100)
-        const color = formatRgba(s.color)
-        const stopOpacity = s.color.a < 1 ? ` stop-opacity="${s.color.a}"` : ""
-        return `      <stop offset="${offset}%" stop-color="${color}"${stopOpacity} />`
+        const r = Math.round((s.color?.r ?? 0) * 255)
+        const g = Math.round((s.color?.g ?? 0) * 255)
+        const b = Math.round((s.color?.b ?? 0) * 255)
+        const stopColor = `rgb(${r}, ${g}, ${b})`
+        const a = s.color?.a !== undefined ? s.color.a : 1
+        const stopOpacity = a < 0.99 ? ` stop-opacity="${round2(a)}"` : ""
+        return `      <stop offset="${offset}%" stop-color="${stopColor}"${stopOpacity} />`
       })
       .join("\n")
 
@@ -478,6 +818,10 @@ function formatFillToSvg(fill: IRFill | undefined, ctx: SvgBuildContext): string
   }
 
   if (fill.type === "GRADIENT_RADIAL") {
+    if (isText) {
+      return getRepresentativeGradientColor(fill)
+    }
+
     const id = `grad_radial_${++ctx.counter}`
     const [a, b, c, d, tx, ty] = fill.gradientTransform || [0.5, 0, 0, 0.5, 0.5, 0.5]
     const cx = Math.round((typeof tx === "number" ? tx : 0.5) * 100)
@@ -486,9 +830,13 @@ function formatFillToSvg(fill: IRFill | undefined, ctx: SvgBuildContext): string
     const stopsXml = fill.gradientStops
       .map((s) => {
         const offset = Math.round(s.position * 100)
-        const color = formatRgba(s.color)
-        const stopOpacity = s.color.a !== undefined && s.color.a < 1 ? ` stop-opacity="${round2(s.color.a)}"` : ""
-        return `      <stop offset="${offset}%" stop-color="${color}"${stopOpacity} />`
+        const r = Math.round((s.color?.r ?? 0) * 255)
+        const g = Math.round((s.color?.g ?? 0) * 255)
+        const b = Math.round((s.color?.b ?? 0) * 255)
+        const stopColor = `rgb(${r}, ${g}, ${b})`
+        const a = s.color?.a !== undefined ? s.color.a : 1
+        const stopOpacity = a < 0.99 ? ` stop-opacity="${round2(a)}"` : ""
+        return `      <stop offset="${offset}%" stop-color="${stopColor}"${stopOpacity} />`
       })
       .join("\n")
 
@@ -517,26 +865,40 @@ function formatEffectsToFilter(effects: IREffect[] | undefined, ctx: SvgBuildCon
   if (!effects || effects.length === 0) return ""
 
   const visibleShadows = effects.filter((e) => e.type === "DROP_SHADOW" && e.visible)
-  if (visibleShadows.length === 0) return ""
+  // Only LAYER_BLUR (CSS filter: blur) is an element blur; NEVER apply BACKGROUND_BLUR (backdrop-filter)
+  // to the SVG element's filter as it blurs the element itself and destroys borders and fills in Figma!
+  const visibleLayerBlurs = effects.filter((e) => e.type === "LAYER_BLUR" && e.visible && e.radius > 0)
 
-  const id = `shadow_${++ctx.counter}`
+  if (visibleShadows.length === 0 && visibleLayerBlurs.length === 0) return ""
 
-  const feShadows = visibleShadows
-    .map((shadow) => {
-      const dx = shadow.offset?.x || 0
-      const dy = shadow.offset?.y !== undefined ? shadow.offset.y : 4
-      const stdDev = Math.max(0.5, round2((shadow.radius || 4) / 2))
-      const r = Math.round((shadow.color?.r ?? 0) * 255)
-      const g = Math.round((shadow.color?.g ?? 0) * 255)
-      const b = Math.round((shadow.color?.b ?? 0) * 255)
-      const floodColor = `rgb(${r}, ${g}, ${b})`
-      const opacity = shadow.color?.a !== undefined ? round2(shadow.color.a) : 0.15
+  const id = `filter_${++ctx.counter}`
+  const filterElements: string[] = []
 
-      return `      <feDropShadow dx="${round2(dx)}" dy="${round2(dy)}" stdDeviation="${stdDev}" flood-color="${floodColor}" flood-opacity="${opacity}" />`
-    })
-    .join("\n")
+  for (const blur of visibleLayerBlurs) {
+    const stdDev = Math.max(0.5, round2(blur.radius / 2))
+    filterElements.push(`      <feGaussianBlur stdDeviation="${stdDev}" />`)
+  }
 
-  const filterXml = `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">\n${feShadows}\n    </filter>`
+  // Emit the primary dominant drop shadow for 100% Figma clipboard compatibility
+  if (visibleShadows.length > 0) {
+    const primary = [...visibleShadows].sort(
+      (a, b) => (b.radius + (b.spread || 0)) - (a.radius + (a.spread || 0))
+    )[0]
+    const dx = primary.offset?.x || 0
+    const dy = primary.offset?.y !== undefined ? primary.offset.y : 4
+    const stdDev = Math.max(0.5, round2((primary.radius || 4) / 2))
+    const r = Math.round((primary.color?.r ?? 0) * 255)
+    const g = Math.round((primary.color?.g ?? 0) * 255)
+    const b = Math.round((primary.color?.b ?? 0) * 255)
+    const floodColor = `rgb(${r}, ${g}, ${b})`
+    const opacity = primary.color?.a !== undefined ? round2(primary.color.a) : 0.15
+
+    filterElements.push(
+      `      <feDropShadow dx="${round2(dx)}" dy="${round2(dy)}" stdDeviation="${stdDev}" flood-color="${floodColor}" flood-opacity="${opacity}" />`
+    )
+  }
+
+  const filterXml = `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">\n${filterElements.join("\n")}\n    </filter>`
   ctx.defs.push(filterXml)
   return ` filter="url(#${id})"`
 }
@@ -551,6 +913,79 @@ function formatRgba(color: IRColor, overrideOpacity?: number): string {
     return `rgb(${r}, ${g}, ${b})`
   }
   return `rgba(${r}, ${g}, ${b}, ${round2(a)})`
+}
+
+function unwrapSvgToGroup(
+  svgContent: string,
+  boxWidth: number,
+  boxHeight: number,
+  ctx: SvgBuildContext
+): string {
+  if (!svgContent || !svgContent.includes("<svg")) return svgContent
+
+  // Extract viewBox if present
+  const viewBoxMatch = svgContent.match(/viewBox=["']([^"']+)["']/i)
+  let scaleX = 1
+  let scaleY = 1
+  let translateX = 0
+  let translateY = 0
+
+  if (viewBoxMatch && viewBoxMatch[1]) {
+    const vbParts = viewBoxMatch[1].trim().split(/[\s,]+/).map(parseFloat)
+    if (vbParts.length === 4 && vbParts[2] > 0 && vbParts[3] > 0) {
+      const [vx, vy, vw, vh] = vbParts
+      const targetW = boxWidth > 0 ? boxWidth : vw
+      const targetH = boxHeight > 0 ? boxHeight : vh
+
+      const isNone = /preserveAspectRatio=["']none["']/i.test(svgContent)
+      if (isNone) {
+        scaleX = targetW / vw
+        scaleY = targetH / vh
+        translateX = -vx * scaleX
+        translateY = -vy * scaleY
+      } else {
+        const uniformScale = Math.min(targetW / vw, targetH / vh)
+        scaleX = uniformScale
+        scaleY = uniformScale
+        translateX = -vx * uniformScale + (targetW - vw * uniformScale) / 2
+        translateY = -vy * uniformScale + (targetH - vh * uniformScale) / 2
+      }
+    }
+  }
+
+  // Extract <defs>...</defs> if any, and hoist to root ctx.defs
+  let cleanContent = svgContent
+  const defsRegex = /<defs[\s\S]*?<\/defs>/gi
+  let defsMatch: RegExpExecArray | null
+  while ((defsMatch = defsRegex.exec(svgContent)) !== null) {
+    const innerDefs = defsMatch[0].replace(/^<defs[^>]*>/i, "").replace(/<\/defs>$/i, "").trim()
+    if (innerDefs) {
+      ctx.defs.push(innerDefs)
+    }
+  }
+  cleanContent = cleanContent.replace(defsRegex, "")
+
+  // Extract inner contents of <svg>...</svg>
+  const innerMatch = cleanContent.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i)
+  const innerElements = innerMatch ? innerMatch[1].trim() : cleanContent
+
+  const hasScale = Math.abs(scaleX - 1) > 0.001 || Math.abs(scaleY - 1) > 0.001
+  const hasTrans = Math.abs(translateX) > 0.01 || Math.abs(translateY) > 0.01
+
+  let innerTransform = ""
+  if (hasTrans && hasScale) {
+    innerTransform = ` transform="translate(${round2(translateX)}, ${round2(translateY)}) scale(${round2(scaleX)}, ${round2(scaleY)})"`
+  } else if (hasScale) {
+    innerTransform = ` transform="scale(${round2(scaleX)}, ${round2(scaleY)})"`
+  } else if (hasTrans) {
+    innerTransform = ` transform="translate(${round2(translateX)}, ${round2(translateY)})"`
+  }
+
+  if (innerTransform) {
+    return `    <g${innerTransform}>\n    ${innerElements}\n    </g>`
+  }
+
+  return innerElements
 }
 
 function escapeXml(str: string): string {

@@ -11,6 +11,7 @@ export { default as Modal, type ModalProps } from "./Modal"
 export { default as Switch, type SwitchProps } from "./Switch"
 export { default as Tabs, type TabsProps, type TabItem } from "./Tabs"
 export { default as Tooltip, type TooltipProps, type TooltipPosition } from "./Tooltip"
+export { default as IslandToolbar, type IslandToolbarProps, type IslandToolbarMode, type IslandToolbarAction } from "./IslandToolbar"
 
 // Brand Icons
 export * from "../icons"

@@ -2,7 +2,6 @@ import React from "react"
 import {
   Maximize2,
   MousePointer,
-  Code,
   X
 } from "lucide-react"
 import type { IRDocument } from "../../types/ir"
@@ -10,7 +9,7 @@ import IconButton from "../ui/IconButton"
 import Button from "../ui/Button"
 import FigmaIcon from "../ui/FigmaIcon"
 
-export type ToolbarMode = "figma-element" | "figma-fullpage" | "inspect-css"
+export type ToolbarMode = "figma-element" | "figma-fullpage"
 
 export interface CapturedItem {
   id: string
@@ -52,9 +51,9 @@ export const FigmaIslandToolbar: React.FC<FigmaIslandToolbarProps> = ({
         pointerEvents: "none",
         background: "transparent"
       }}
-      className={`hub-extension-root ${isDarkMode ? "dark" : ""} select-none font-sans`}
+      className={`${isDarkMode ? "dark" : ""} select-none font-sans pointer-events-none`}
     >
-      <div className="pointer-events-auto animate-scale-in flex items-center h-9 px-2.5 gap-1.5 rounded-full bg-neutral-900/95 dark:bg-neutral-900/95 text-white shadow-2xl backdrop-blur-md">
+      <div className="hub-extension-root pointer-events-auto animate-scale-in flex items-center h-9 px-2.5 gap-1.5 rounded-full bg-neutral-900/95 dark:bg-neutral-900/95 text-white shadow-2xl backdrop-blur-md">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-1.5 px-2 h-7 text-white font-bold text-xs tracking-tight shrink-0">
           <FigmaIcon size={15} className="shrink-0" />
@@ -97,22 +96,6 @@ export const FigmaIslandToolbar: React.FC<FigmaIslandToolbarProps> = ({
         >
           <MousePointer className="w-3.5 h-3.5 text-purple-400" />
           <span>Select element</span>
-        </Button>
-
-        {/* Action 3: Copy CSS */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onModeChange("inspect-css")}
-          title="Hover and click any element to inspect & copy CSS"
-          className={`h-7 px-3 text-xs font-medium gap-1.5 shrink-0 rounded-full transition-all ${
-            currentMode === "inspect-css"
-              ? "bg-neutral-800 text-white font-semibold shadow-xs hover:bg-neutral-750"
-              : "text-neutral-200 hover:text-white hover:bg-neutral-800/80"
-          }`}
-        >
-          <Code className="w-3.5 h-3.5 text-blue-400" />
-          <span>Copy CSS</span>
         </Button>
 
         <div className="w-px h-4 bg-neutral-800 shrink-0 my-auto mx-0.5" />

@@ -101,15 +101,33 @@ export function parseTypography(
   else if (textDecorationRaw.includes("line-through")) textDecoration = "STRIKETHROUGH"
 
   // 9. Text Color Fill
-  const textColor = parseCssColor(colorRaw) || { r: 0, g: 0, b: 0, a: 1 }
-  const textFills: IRFill[] = [
-    {
-      type: "SOLID",
-      color: textColor,
-      opacity: textColor.a,
-      visible: true
-    }
-  ]
+  const webkitTextFillColor = getVal("-webkit-text-fill-color")
+  const effectiveColorStr =
+    webkitTextFillColor && webkitTextFillColor.trim() && !webkitTextFillColor.includes("currentcolor")
+      ? webkitTextFillColor
+      : colorRaw
+
+  const parsedColor = parseCssColor(effectiveColorStr)
+  const isTransparent = !parsedColor || parsedColor.a <= 0.01
+  const textColor = parsedColor || { r: 0, g: 0, b: 0, a: 1 }
+
+  const textFills: IRFill[] = isTransparent
+    ? [
+        {
+          type: "SOLID",
+          color: textColor,
+          opacity: 0,
+          visible: false
+        }
+      ]
+    : [
+        {
+          type: "SOLID",
+          color: textColor,
+          opacity: textColor.a,
+          visible: true
+        }
+      ]
 
   return {
     characters,

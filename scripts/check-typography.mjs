@@ -63,8 +63,13 @@ export function isAllowedNumericOrMetric(text) {
   // Hex color codes: #RGB, #RGBA, #RRGGBB, #RRGGBBAA
   if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed)) return true
 
-  // Pure numeric JSX expressions (e.g. {count}, {fontSize}, {stats.totalNodes}, {totalShapes}, {settings.brightness}%, {hoverSize}, {hoverWeight}, {hoverDimensions})
-  if (/^\{[a-zA-Z0-9_.]*(count|size|width|height|weight|nodes|shapes|total|brightness|contrast|sepia|hex|color|timestamp|number|totalNodes|totalShapes|fontSize|lineHeight|fontWeight|dimensions|viewport)[a-zA-Z0-9_.]*\}\s*(%|px|rem|em|w)?$/i.test(trimmed)) {
+  // Pure numeric JSX expressions (e.g. {count}, {fontSize}, {stats.totalNodes}, {totalShapes}, {settings.brightness}%, {hoverSize}, {hoverWeight}, {hoverDimensions}, {progress.current})
+  if (/^\{[a-zA-Z0-9_.]*(count|size|width|height|weight|nodes|shapes|total|current|progress|brightness|contrast|sepia|hex|color|timestamp|number|totalNodes|totalShapes|fontSize|lineHeight|fontWeight|dimensions|viewport)[a-zA-Z0-9_.]*\}\s*(%|px|rem|em|w)?$/i.test(trimmed)) {
+    return true
+  }
+
+  // Fraction/ratio combinations like `{progress.current}/{progress.total}` or `{current} / {total}`
+  if (/^\{[a-zA-Z0-9_.]*(current|count|progress|idx|index)[a-zA-Z0-9_.]*\}\s*(\/|of)\s*\{[a-zA-Z0-9_.]*(total|count|length|max)[a-zA-Z0-9_.]*\}$/i.test(trimmed)) {
     return true
   }
 

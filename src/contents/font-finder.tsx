@@ -4,9 +4,8 @@ import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo"
 import React, { useEffect, useState, useRef } from "react"
 import { Storage } from "@plasmohq/storage"
 import FontFinderModal, { type FontMetrics } from "../components/extensions/FontFinderModal"
+import FontFinderIslandToolbar, { type FontFinderToolbarMode } from "../components/extensions/FontFinderIslandToolbar"
 import { ExtensionStorage } from "../lib/storage"
-import { Type, MousePointer } from "lucide-react"
-import ActiveToolBanner from "../components/ui/ActiveToolBanner"
 
 export const config: PlasmoCSConfig = {
   matches: ["http://*/*", "https://*/*"],
@@ -63,35 +62,11 @@ export const getStyle: PlasmoGetStyle = () => {
 const storage = new Storage({ area: "local" })
 
 /**
- * Resolves the appropriate inspectable HTML element from an event target.
- * Walks past SVGs, icons, and non-text pseudoelements up to their parent button/link/container.
- */
-function getInspectableElement(target: Element | null): HTMLElement | null {
-  if (!target) return null
-  if (target.closest(".hub-extension-root")) return null
-
-  let el: Element | null = target
-
-  // If target is inside an SVG or is an SVGElement, walk up to its container (button, a, div, etc.)
-  if (el instanceof SVGElement || el.tagName.toLowerCase() === "svg" || el.closest("svg")) {
-    const svgRoot = el.closest("svg")
-    const container = svgRoot?.parentElement || el.parentElement
-    if (container && !container.closest(".hub-extension-root")) {
-      el = container
-    }
-  }
-
-  if (!(el instanceof HTMLElement)) return null
-
-  return el
-}
-
-/**
- * Extracts typography & computed styles from the inspected element.
+ * Extracts typography & computed styles from the inspected element with gradient-text awareness.
  */
 function extractFontMetrics(element: HTMLElement): FontMetrics {
   const computed = window.getComputedStyle(element)
-  
+
   // Prefer innerText if present, or textContent
   let text = ""
   if (element.innerText && element.innerText.trim().length > 0) {
@@ -102,7 +77,8 @@ function extractFontMetrics(element: HTMLElement): FontMetrics {
 
   // Fallbacks for inputs/buttons without direct text
   if (!text) {
-    text = (element as HTMLInputElement).placeholder ||
+    text =
+      (element as HTMLInputElement).placeholder ||
       element.getAttribute("aria-label") ||
       element.getAttribute("title") ||
       element.getAttribute("alt") ||
@@ -115,13 +91,43 @@ function extractFontMetrics(element: HTMLElement): FontMetrics {
     text = "Sample typography text"
   }
 
+  let textColor = computed.color
+  const webkitTextFillColor = computed.getPropertyValue("-webkit-text-fill-color")
+  const bgClip = (
+    computed.getPropertyValue("background-clip") ||
+    computed.getPropertyValue("-webkit-background-clip") ||
+    ""
+  ).toLowerCase()
+  const bgImg = computed.backgroundImage
+
+  if (
+    bgClip.includes("text") ||
+    textColor === "transparent" ||
+    textColor === "rgba(0, 0, 0, 0)" ||
+    webkitTextFillColor === "transparent"
+  ) {
+    if (bgImg && bgImg !== "none" && bgImg.includes("gradient")) {
+      textColor = "Gradient Fill"
+    } else {
+      let cur: HTMLElement | null = element.parentElement
+      while (cur && cur !== document.body) {
+        const c = window.getComputedStyle(cur).color
+        if (c && c !== "transparent" && c !== "rgba(0, 0, 0, 0)") {
+          textColor = c
+          break
+        }
+        cur = cur.parentElement
+      }
+    }
+  }
+
   return {
     fontFamily: computed.fontFamily,
     fontSize: computed.fontSize,
     fontWeight: computed.fontWeight,
     lineHeight: computed.lineHeight,
     letterSpacing: computed.letterSpacing,
-    color: computed.color,
+    color: textColor,
     backgroundColor: computed.backgroundColor,
     textAlign: computed.textAlign,
     textTransform: computed.textTransform,
@@ -132,10 +138,12 @@ function extractFontMetrics(element: HTMLElement): FontMetrics {
 
 export default function FontFinderContentScript() {
   const [isActive, setIsActive] = useState<boolean>(false)
+  const [currentMode, setCurrentMode] = useState<FontFinderToolbarMode>("inspect-element")
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null)
   const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null)
   const [inspectedMetrics, setInspectedMetrics] = useState<FontMetrics | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
   // Sync active state from storage
   useEffect(() => {
@@ -190,6 +198,7 @@ export default function FontFinderContentScript() {
 
       if (message?.type === "START_FONT_FINDER") {
         setIsActive(true)
+        setCurrentMode("inspect-element")
         setHoveredElement(null)
         setHoveredRect(null)
         setInspectedMetrics(null)
@@ -239,100 +248,6 @@ export default function FontFinderContentScript() {
     }
   }, [])
 
-  // Manage crosshair cursor on page without breaking extension root cursor
-  useEffect(() => {
-    const styleId = "hub-font-finder-global-cursor"
-    if (isActive && !inspectedMetrics) {
-      if (!document.getElementById(styleId)) {
-        const cursorStyle = document.createElement("style")
-        cursorStyle.id = styleId
-        cursorStyle.textContent = `
-          *:not(.hub-extension-root, .hub-extension-root *) {
-            cursor: crosshair !important;
-          }
-        `
-        document.head.appendChild(cursorStyle)
-      }
-    } else {
-      const existing = document.getElementById(styleId)
-      if (existing) existing.remove()
-    }
-
-    return () => {
-      const existing = document.getElementById(styleId)
-      if (existing) existing.remove()
-    }
-  }, [isActive, inspectedMetrics])
-
-  // Native non-blocking event interception (mousemove, click, mousedown)
-  useEffect(() => {
-    if (!isActive || inspectedMetrics) {
-      setHoveredElement(null)
-      setHoveredRect(null)
-      return
-    }
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const target = getInspectableElement(e.target as Element)
-      if (!target) {
-        setHoveredElement(null)
-        setHoveredRect(null)
-        return
-      }
-
-      setHoveredElement(target)
-      setHoveredRect(target.getBoundingClientRect())
-    }
-
-    const handleMouseDown = (e: MouseEvent) => {
-      const target = e.target as Element | null
-      if (target && !target.closest(".hub-extension-root")) {
-        // Prevent accidental text drag or button activation on press
-        e.preventDefault()
-      }
-    }
-
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Element | null
-      if (!target) return
-
-      // Allow clicks on extension UI
-      if (target.closest(".hub-extension-root")) return
-
-      // Intercept page click so links/buttons don't navigate or fire actions
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
-
-      const inspectable = getInspectableElement(target)
-      if (!inspectable) return
-
-      const metrics = extractFontMetrics(inspectable)
-      setInspectedMetrics(metrics)
-
-      // Save to history
-      ExtensionStorage.addFontHistory({
-        fontFamily: metrics.fontFamily.split(",")[0].replace(/['"]/g, "").trim(),
-        fontSize: metrics.fontSize,
-        fontWeight: metrics.fontWeight,
-        color: metrics.color
-      }).catch(console.error)
-
-      setHoveredElement(null)
-      setHoveredRect(null)
-    }
-
-    document.addEventListener("mousemove", handleMouseMove, { capture: true, passive: true })
-    document.addEventListener("mousedown", handleMouseDown, { capture: true })
-    document.addEventListener("click", handleClick, { capture: true })
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove, { capture: true })
-      document.removeEventListener("mousedown", handleMouseDown, { capture: true })
-      document.removeEventListener("click", handleClick, { capture: true })
-    }
-  }, [isActive, inspectedMetrics])
-
   // Scroll & resize handler to keep hover rect anchored
   useEffect(() => {
     const handleScrollOrResize = () => {
@@ -354,7 +269,12 @@ export default function FontFinderContentScript() {
 
   // Esc key listener: close extension completely
   useEffect(() => {
-    if (!isActive) return
+    if (!isActive) {
+      setHoveredElement(null)
+      setHoveredRect(null)
+      setInspectedMetrics(null)
+      return
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -363,7 +283,49 @@ export default function FontFinderContentScript() {
     }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isActive])
+  }, [isActive, inspectedMetrics])
+
+  const handleMouseMoveOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!overlayRef.current) return
+
+    overlayRef.current.style.setProperty("pointer-events", "none", "important")
+    const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
+    overlayRef.current.style.setProperty("pointer-events", "auto", "important")
+
+    if (!target || target.closest(".hub-extension-root")) return
+
+    if (target !== hoveredElement) {
+      setHoveredElement(target)
+      setHoveredRect(target.getBoundingClientRect())
+    }
+  }
+
+  const handleClickOverlay = async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!overlayRef.current) return
+
+    e.preventDefault()
+    e.stopPropagation()
+
+    overlayRef.current.style.setProperty("pointer-events", "none", "important")
+    const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
+    overlayRef.current.style.setProperty("pointer-events", "auto", "important")
+
+    if (!target || target.closest(".hub-extension-root")) return
+
+    const metrics = extractFontMetrics(target)
+    setInspectedMetrics(metrics)
+
+    // Save to history
+    ExtensionStorage.addFontHistory({
+      fontFamily: metrics.fontFamily.split(",")[0].replace(/['"]/g, "").trim(),
+      fontSize: metrics.fontSize,
+      fontWeight: metrics.fontWeight,
+      color: metrics.color
+    }).catch(console.error)
+
+    setHoveredElement(null)
+    setHoveredRect(null)
+  }
 
   const handleClose = () => {
     setIsActive(false)
@@ -375,7 +337,6 @@ export default function FontFinderContentScript() {
 
   if (!isActive) return null
 
-  // Computed font details on hover
   const hoverFont = hoveredElement
     ? window.getComputedStyle(hoveredElement).fontFamily.split(",")[0].replace(/['"]/g, "").trim()
     : ""
@@ -383,30 +344,49 @@ export default function FontFinderContentScript() {
   const hoverWeight = hoveredElement ? window.getComputedStyle(hoveredElement).fontWeight : ""
 
   const pillTop = hoveredRect
-    ? hoveredRect.top < 32
-      ? hoveredRect.bottom + 6
-      : Math.max(8, hoveredRect.top - 24)
+    ? hoveredRect.top < 68
+      ? hoveredRect.bottom + 8
+      : Math.max(68, hoveredRect.top - 26)
     : 0
 
   const pillLeft = hoveredRect
-    ? Math.max(8, Math.min(window.innerWidth - 200, hoveredRect.left))
+    ? Math.max(12, Math.min(window.innerWidth - 240, hoveredRect.left))
     : 0
 
   return (
     <div className={`hub-extension-root ${isDarkMode ? "dark" : ""} text-neutral-900 dark:text-neutral-100 antialiased`}>
-      {/* Top Floating Active Island Pill */}
-      {isActive && (
-        <ActiveToolBanner
-          title="Font Finder"
-          icon={<Type size={13} className="text-neutral-900 dark:text-neutral-100" />}
-          instruction="Click element to inspect"
-          instructionIcon={<MousePointer size={12} />}
-          onClose={handleClose}
-          isDarkMode={isDarkMode}
+      {/* 1. Seamless Floating Island Toolbar Centered at Top */}
+      <FontFinderIslandToolbar
+        currentMode={currentMode}
+        onModeChange={(mode) => {
+          setCurrentMode(mode)
+          setInspectedMetrics(null)
+        }}
+        onClose={handleClose}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* 2. Overlay across viewport */}
+      {isActive && !inspectedMetrics && (
+        <div
+          ref={overlayRef}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            pointerEvents: "auto",
+            background: "transparent",
+            zIndex: 2147483640,
+            cursor: "crosshair"
+          }}
+          onMouseMove={handleMouseMoveOverlay}
+          onClick={handleClickOverlay}
         />
       )}
 
-      {/* Hover Bounding Box */}
+      {/* 3. Hover Bounding Box */}
       {isActive && hoveredRect && !inspectedMetrics && (
         <>
           <div
@@ -417,11 +397,9 @@ export default function FontFinderContentScript() {
               height: `${hoveredRect.height}px`,
               position: "fixed",
               zIndex: 2147483645,
-              pointerEvents: "none",
-              border: isDarkMode ? "2px solid #ffffff" : "2px solid #000000",
-              backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"
+              pointerEvents: "none"
             }}
-            className="rounded-xs transition-all duration-75"
+            className="rounded-xs transition-all duration-75 border-2 border-emerald-500 bg-emerald-500/10"
           />
 
           {/* Hover Tag Pill */}
@@ -433,18 +411,20 @@ export default function FontFinderContentScript() {
               zIndex: 2147483646,
               pointerEvents: "none"
             }}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black dark:bg-white text-white dark:text-black shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-md font-sans text-[10px] font-bold transition-all duration-75 select-none leading-none h-[20px]"
           >
             <span>{hoverFont}</span>
             <span className="opacity-40">|</span>
             <span className="font-mono">{hoverSize}</span>
             <span className="opacity-40">|</span>
             <span>w<span className="font-mono">{hoverWeight}</span></span>
+            <span className="opacity-40">|</span>
+            <span className="text-[10px] font-extrabold">Click to Inspect</span>
           </div>
         </>
       )}
 
-      {/* Modal Inspector */}
+      {/* 4. Modal Inspector */}
       {inspectedMetrics && (
         <div style={{ pointerEvents: "auto" }}>
           <FontFinderModal

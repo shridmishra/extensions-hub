@@ -6,7 +6,10 @@ export const TOOL_MESSAGE_MAP: Record<string, string> = {
   "css-picker": "START_CSS_PICKER",
   "figma-picker": "START_ELEMENT_SELECTION",
   "page-ruler": "START_PAGE_RULER",
-  "link-grabber": "START_LINK_GRABBER"
+  "link-grabber": "START_LINK_GRABBER",
+  "screenshot-capture": "START_SCREENSHOT_CAPTURE",
+  "color-palette": "START_COLOR_PALETTE",
+  "time-zone-converter": "START_TIME_ZONE_CONVERTER"
 }
 
 /**
@@ -79,8 +82,12 @@ export async function ensureContentScriptsInjected(tabId: number, url?: string):
       }
     }
 
-    // Brief stabilization window for React/Plasmo CSUI initialization
-    await new Promise((resolve) => setTimeout(resolve, 80))
+    // Wait until content script responds or up to 350ms
+    for (let i = 0; i < 7; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      const ready = await isContentScriptReady(tabId)
+      if (ready) return true
+    }
     return true
   } catch (err) {
     console.warn(`[Hub] Failed to inject content scripts into tab ${tabId}:`, err)
@@ -168,11 +175,13 @@ export async function launchExtension(
       extensionId.includes("ruler") ||
       extensionId.includes("debugger") ||
       extensionId.includes("grabber") ||
-      extensionId.includes("inspector")
+      extensionId.includes("inspector") ||
+      extensionId.includes("palette") ||
+      extensionId.includes("screenshot")
 
     // 1. Interactive On-Page Inspection Tools
     if (isInteractive) {
-      // Enforce mutual exclusion in storage
+      // Enforce mutual exclusion in storage so content scripts react immediately via storage watch
       await activateInteractiveTool(extensionId)
 
       // Ensure content scripts are injected and listening
